@@ -260,7 +260,7 @@ TEST_CASE( "Events match their underlying distributions", "[physics]" )
   marley::tests::Histogram cevns_hist( NUM_TF_BINS, TF_MIN, TF_MAX );
 
   //std::ifstream ev_file("events.ascii");
-  //marley::Event ev;
+  //HepMC3::GenEvent ev;
 
   //std::ofstream ev_file("events.ascii");
 
@@ -269,7 +269,7 @@ TEST_CASE( "Events match their underlying distributions", "[physics]" )
     if ( e % 1000 == 0 ) MARLEY_LOG_INFO() << "Event " << e;
 
     // Generate a new event
-    marley::Event ev = gen.create_event();
+    HepMC3::GenEvent ev = gen.create_event();
     //ev_file << ev << '\n';
 
     // DEBUG

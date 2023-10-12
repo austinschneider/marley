@@ -19,16 +19,16 @@
 
 #include "marley/Error.hh"
 
-namespace marley {
-  class Particle;
+namespace HepMC3 {
+  class GenParticle;
 }
 
 namespace marley_kinematics {
 
   // Lorentz boost a particle, replacing its energy and momentum with the
   // boosted versions
-  void lorentz_boost(double beta_x, double beta_y, double beta_z,
-    marley::Particle& particle_to_boost);
+  void lorentz_boost( double beta_x, double beta_y, double beta_z,
+    HepMC3::GenParticle& particle_to_boost );
 
   /// @brief Handles kinematic calculations needed to decay an initial
   /// particle into two final particles
@@ -50,20 +50,22 @@ namespace marley_kinematics {
   /// mother particle)
   /// @param[in phi_first The azimuthal emission angle for the first daughter
   /// particle (as measured in the rest frame of the mother particle)
-  void two_body_decay(const marley::Particle& initial_particle,
-    marley::Particle& first_product, marley::Particle& second_product,
-    double cos_theta_first, double phi_first);
+  void two_body_decay(
+    const std::shared_ptr< HepMC3::GenParticle >& initial_particle,
+    std::shared_ptr< HepMC3::GenParticle >& first_product,
+    std::shared_ptr< HepMC3::GenParticle >& second_product,
+    double cos_theta_first, double phi_first );
 
   // Rotates a particle's 3-momentum so that it points in the (x, y, z)
   // direction
-  void rotate_momentum_vector(double x, double y, double z,
-    marley::Particle& particle_to_rotate);
+  void rotate_momentum_vector( double x, double y, double z,
+    HepMC3::GenParticle& particle_to_rotate );
 
   // Gets the square of the total energy in the center of momentum frame for
   // two particles
-  double get_mandelstam_s(const marley::Particle& p1,
-    const marley::Particle& p2);
+  double get_mandelstam_s( const HepMC3::GenParticle& p1,
+    const HepMC3::GenParticle& p2 );
 
   // Boost two particles into their mutual center-of-momentum frame
-  void boost_to_cm_frame(marley::Particle& p1, marley::Particle& p2);
+  void boost_to_cm_frame( HepMC3::GenParticle& p1, HepMC3::GenParticle& p2 );
 }

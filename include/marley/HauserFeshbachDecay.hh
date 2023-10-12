@@ -21,6 +21,9 @@
 #include "marley/ExitChannel.hh"
 #include "marley/Parity.hh"
 
+// HepMC3 includes
+#include "HepMC3/GenParticle.h"
+
 namespace marley {
 
   // Forward-declare the StructureDatabase class
@@ -32,28 +35,31 @@ namespace marley {
 
     public:
 
-      /// @param compound_nucleus Particle object that represents
+      /// @param compound_nucleus GenParticle object that represents
       /// the excited nucleus
       /// @param Exi Initial excitation energy (MeV)
       /// @param twoJi Two times the initial nuclear spin
       /// @param Pi Initial nuclear parity
       /// @param sdb Reference to the StructureDatabase to use in calculations
-      HauserFeshbachDecay( const marley::Particle& compound_nucleus,
-        double Exi, int twoJi, marley::Parity Pi,
+      HauserFeshbachDecay( const std::shared_ptr< HepMC3::GenParticle >&
+        compound_nucleus, double Exi, int twoJi, marley::Parity Pi,
         marley::StructureDatabase& sdb );
 
       /// @brief Simulates a decay of the compound nucleus
       /// @param[out] Exf Final nuclear excitation energy (MeV)
       /// @param[out] twoJf Two times the final nuclear spin
       /// @param[out] Pf Final nuclear parity
-      /// @param[out] emitted_particle Particle object representing the nuclear
-      /// fragment or &gamma;-ray emitted during the decay
-      /// @param[out] residual_nucleus Particle object representing the
-      /// final-state nucleus
+      /// @param[out] emitted_particle GenParticle object representing the
+      /// nuclear fragment or &gamma;-ray emitted during the decay
+      /// @param[out] residual_nucleus GenParticle object representing the
+      /// final-state nucleus (ion)
+      /// @param[out] qIon Charge (in units of the elementary charge)
+      /// of the residual nucleus (ion)
       /// param gen Generator to use for random sampling
       bool do_decay( double& Exf, int& twoJf, marley::Parity& Pf,
-        marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-        marley::Generator& gen );
+        std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+        std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
+        int& qIon, marley::Generator& gen );
 
       /// @brief Print information about the possible decay channels to a
       /// std::ostream
@@ -83,7 +89,7 @@ namespace marley {
 
       /// @brief Particle object that represents the compound nucleus before it
       /// decays
-      const marley::Particle compound_nucleus_;
+      const std::shared_ptr< HepMC3::GenParticle > compound_nucleus_;
       const double Exi_; ///< Initial nuclear excitation energy
       const int twoJi_; ///< Two times the initial nuclear spin
       const marley::Parity Pi_; ///< Two times the initial nuclear parity

@@ -16,13 +16,16 @@
 
 #pragma once
 
+namespace HepMC3 {
+  class GenEvent;
+}
+
 namespace marley {
 
   // Forward-declare some needed classes
-  class Event;
   class Generator;
 
-  /// @brief Abstract base class for entities that take a marley::Event as
+  /// @brief Abstract base class for entities that take a HepMC3::GenEvent as
   /// input and possibly modify it
   class EventProcessor {
 
@@ -32,11 +35,11 @@ namespace marley {
 
       inline virtual ~EventProcessor() = default;
 
-      /// @brief Processes an input MARLEY Event object
-      /// @param[in,out] ev The Event object to be processed
+      /// @brief Processes an input GenEvent object
+      /// @param[in,out] ev The GenEvent object to be processed
       /// @param[in] gen If needed, the Generator object to use during
       /// processing (e.g., for obtaining random numbers)
-      virtual void process_event( marley::Event& ev,
+      virtual void process_event( HepMC3::GenEvent& ev,
         marley::Generator& gen ) = 0;
   };
 

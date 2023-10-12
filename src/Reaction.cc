@@ -15,7 +15,14 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 // Standard library includes
+#include <limits>
 #include <map>
+
+// HepMC3 includes
+#include "HepMC3/Attribute.h"
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenVertex.h"
+#include "HepMC3/GenParticle.h"
 
 // MARLEY includes
 #include "marley/ElectronReaction.hh"
@@ -25,6 +32,7 @@
 #include "marley/NuclearReaction.hh"
 #include "marley/Reaction.hh"
 #include "marley/StructureDatabase.hh"
+#include "marley/hepmc3_utils.hh"
 #include "marley/marley_kinematics.hh"
 #include "marley/marley_utils.hh"
 
@@ -215,43 +223,78 @@ void marley::Reaction::two_two_scatter(double KEa, double& s, double& Ec_cm,
   Ed_cm = std::max(sqrt_s - Ec_cm, md_);
 }
 
-marley::Event marley::Reaction::make_event_object(double KEa,
-  double pc_cm, double cos_theta_c_cm, double phi_c_cm,
+std::shared_ptr< HepMC3::GenEvent > marley::Reaction::make_event_object(
+  double KEa, double pc_cm, double cos_theta_c_cm, double phi_c_cm,
   double Ec_cm, double Ed_cm, double E_level, int twoJ,
   const marley::Parity& P) const
 {
-  double sin_theta_c_cm = real_sqrt(1.
-    - std::pow(cos_theta_c_cm, 2));
+  // NuHepMC E.R.4
+  auto event = std::make_shared< HepMC3::GenEvent >( HepMC3::Units::MEV,
+    HepMC3::Units::CM );
+
+  // NuHepMC E.R.3
+  int signal_process_id = marley_hepmc3::get_nuhepmc_proc_id( process_type_ );
+  event->add_attribute( "signal_process_id",
+    std::make_shared< HepMC3::IntAttribute >( signal_process_id )
+  );
+
+  // Create the primary vertex
+  // NuHepMC E.R.6
+  auto prim_vtx = std::make_shared< HepMC3::GenVertex >();
+  prim_vtx->set_status( marley_hepmc3::NUHEPMC_PRIMARY_VERTEX );
+
+  event->add_vertex( prim_vtx );
+
+  double sin_theta_c_cm = real_sqrt( 1. - std::pow(cos_theta_c_cm, 2) );
 
   // Determine the Cartesian components of the ejectile's CM frame momentum
-  double pc_cm_x = sin_theta_c_cm * std::cos(phi_c_cm) * pc_cm;
-  double pc_cm_y = sin_theta_c_cm * std::sin(phi_c_cm) * pc_cm;
+  double pc_cm_x = sin_theta_c_cm * std::cos( phi_c_cm ) * pc_cm;
+  double pc_cm_y = sin_theta_c_cm * std::sin( phi_c_cm ) * pc_cm;
   double pc_cm_z = cos_theta_c_cm * pc_cm;
 
   // Get the lab-frame total energy of the projectile
   double Ea = KEa + ma_;
 
   // Determine the magnitude of the lab-frame 3-momentum of the projectile
-  double pa = real_sqrt(KEa*(KEa + 2*ma_));
+  double pa = real_sqrt( KEa * (KEa + 2.*ma_) );
 
   // Create particle objects representing the projectile and target in the lab
   // frame
   // @todo Allow for projectile directions other than along the z-axis
-  marley::Particle projectile(pdg_a_, Ea, 0, 0, pa, ma_);
-  marley::Particle target(pdg_b_, mb_, 0, 0, 0, mb_);
+  auto projectile = marley_hepmc3::make_particle( pdg_a_, 0., 0., pa, Ea,
+    marley_hepmc3::NUHEPMC_PROJECTILE_STATUS, ma_ );
+
+  auto target = marley_hepmc3::make_particle( pdg_b_,
+    marley_hepmc3::NUHEPMC_TARGET_STATUS, mb_ );
 
   // Create particle objects representing the ejectile and residue in the CM
   // frame.
-  marley::Particle ejectile(pdg_c_, Ec_cm, pc_cm_x, pc_cm_y, pc_cm_z, mc_);
-  marley::Particle residue(pdg_d_, Ed_cm, -pc_cm_x, -pc_cm_y, -pc_cm_z, md_);
+  auto ejectile = marley_hepmc3::make_particle( pdg_c_, pc_cm_x, pc_cm_y,
+    pc_cm_z, Ec_cm, marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, mc_ );
+
+  auto residue = marley_hepmc3::make_particle( pdg_d_, -pc_cm_x, -pc_cm_y,
+    -pc_cm_z, Ed_cm, marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, md_ );
 
   // Boost the ejectile and residue into the lab frame.
   double beta_z = pa / (Ea + mb_);
-  marley_kinematics::lorentz_boost(0, 0, -beta_z, ejectile);
-  marley_kinematics::lorentz_boost(0, 0, -beta_z, residue);
+  marley_kinematics::lorentz_boost( 0., 0., -beta_z, *ejectile );
+  marley_kinematics::lorentz_boost( 0., 0., -beta_z, *residue );
 
-  // Create the event object and load it with the appropriate information
-  marley::Event event(projectile, target, ejectile, residue, E_level, twoJ, P);
+  // Attach the particles to the primary vertex
+  prim_vtx->add_particle_in( projectile );
+  prim_vtx->add_particle_in( target );
+
+  prim_vtx->add_particle_out( ejectile );
+  prim_vtx->add_particle_out( residue );
+
+  // Add attributes needed to keep track of the nuclear de-excitation state
+  residue->add_attribute( "Ex",
+    std::make_shared< HepMC3::DoubleAttribute >(E_level) );
+  residue->add_attribute( "twoJ",
+    std::make_shared< HepMC3::IntAttribute >(twoJ) );
+  residue->add_attribute( "parity",
+    std::make_shared< HepMC3::IntAttribute >(static_cast<int>( P )) );
+
   return event;
 }
 

@@ -91,6 +91,9 @@ endif
 # Define the MARLEY_VERSION preprocessor macro
 override CXXFLAGS += -DMARLEY_VERSION="\"$(MARLEY_VERSION)\""
 
+# Define the MARLEY_GIT_REVISION preprocessor macro
+override CXXFLAGS += -DMARLEY_GIT_REVISION="\"$(MARLEY_GIT_REVISION)\""
+
 SHARED_LIB_NAME := MARLEY
 SHARED_LIB := lib$(SHARED_LIB_NAME).$(SHARED_LIB_SUFFIX)
 ROOT_SHARED_LIB_NAME := MARLEY_ROOT
@@ -164,6 +167,21 @@ Please ensure that the gsl-config executable is on your PATH and try again.
   GSL_CXXFLAGS := $(shell $(GSLCONFIG) --cflags)
   GSL_LDFLAGS := $(shell $(GSLCONFIG) --libs)
 
+  # Get information about the HepMC3 installation
+  # (required as of MARLEY v2.0.0)
+  HEPMC3CONFIG := $(shell which HepMC3-config)
+  ifeq (, $(shell which HepMC3-config))
+    define hepmc3_err_message
+Could not find a working HepMC3 installation.
+Please ensure that the HepMC3-config executable is on your PATH and try again.
+    endef
+    $(error "$(hepmc3_err_message)")
+  endif
+
+  # Add the appropriate compilation flags to use the GNU Scientific Library
+  HEPMC3_CXXFLAGS := $(shell $(HEPMC3CONFIG) --cflags)
+  HEPMC3_LDFLAGS := $(shell $(HEPMC3CONFIG) --libs)
+
   # The user may force the Makefile to ignore ROOT entirely by defining
   # IGNORE_ROOT="yes" (or any non-empty string) on the command line
   # invocation of make.
@@ -227,21 +245,22 @@ Please ensure that the gsl-config executable is on your PATH and try again.
       OBJECTS := $(filter-out OutputFile.o, $(OBJECTS))
 
       ROOT_SHARED_LIB_LDFLAGS := -l$(ROOT_SHARED_LIB_NAME)
-      ROOT_SHARED_LIB_OBJECTS = marley_root.o RootJSONConfig.o
-      ROOT_SHARED_LIB_OBJECTS += OutputFile.o RootOutputFile.o
-      ROOT_SHARED_LIB_OBJECTS += RootEventFileReader.o MacroEventFileReader.o $(ROOT_OBJ_DICT)
+      ROOT_SHARED_LIB_OBJECTS = marley_root.o RootJSONConfig.o OutputFile.o
+      #ROOT_SHARED_LIB_OBJECTS += RootOutputFile.o
+      #ROOT_SHARED_LIB_OBJECTS += RootEventFileReader.o MacroEventFileReader.o
+      #ROOT_SHARED_LIB_OBJECTS += $(ROOT_OBJ_DICT)
   
 $(ROOT_OBJ_DICT):
 	$(RM) marley_root_dict*.*
 	$(ROOTCLING) -f marley_root_dict.cc -c $(ROOT_DICT_INCLUDES)
-	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) \
+	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) \
 	-I$(INCLUDE_DIR) -fPIC -o $(ROOT_OBJ_DICT) -c marley_root_dict.cc
 	$(RM) marley_root_dict.cc
   
 $(ROOT_SHARED_LIB): $(SHARED_LIB) $(ROOT_SHARED_LIB_OBJECTS)
-	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) -fPIC -shared \
+	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) -fPIC -shared \
 	  -o $(ROOT_SHARED_LIB) -L. -l$(SHARED_LIB_NAME) \
-	  $(ROOT_SHARED_LIB_OBJECTS) $(ROOT_LDFLAGS) $(GSL_LDFLAGS)
+	  $(ROOT_SHARED_LIB_OBJECTS) $(ROOT_LDFLAGS) $(GSL_LDFLAGS) $(HEPMC3_LDFLAGS)
 
     endif
   else
@@ -275,21 +294,21 @@ endif
 .INTERMEDIATE: $(OBJECTS) $(TEST_OBJECTS) $(ROOT_SHARED_LIB_OBJECTS) marley.o marsum.o
 
 %.o: $(SRC_DIR)/%.cc
-	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) \
+	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) \
 	-I$(INCLUDE_DIR) -fPIC -o $@ -c $^
 
 %.o: $(SRC_DIR)/tests/%.cc
-	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) \
+	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) \
 	-I$(INCLUDE_DIR) -fPIC -o $@ -c $^
 
 $(SHARED_LIB): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) $(GSL_LDFLAGS) \
+	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) $(GSL_LDFLAGS) $(HEPMC3_LDFLAGS) \
 	-fPIC -shared -o $@ $^
 
 marsum: $(MARLEY_LIBS) marsum.o
-	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) -o $@ -L. \
+	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) -o $@ -L. \
 	  -l$(SHARED_LIB_NAME) $(ROOT_SHARED_LIB_LDFLAGS) $(ROOT_LDFLAGS) \
-	  $(GSL_LDFLAGS) -Wl,-rpath -Wl,$(libdir):$(shell pwd) marsum.o
+	  $(GSL_LDFLAGS) $(HEPMC3_LDFLAGS) -Wl,-rpath -Wl,$(libdir):$(shell pwd) marsum.o
 
 mroot: $(MARLEY_LIBS)
 	cp $(SRC_DIR)/scripts/mroot .
@@ -307,14 +326,14 @@ marley-config: $(MARLEY_LIBS)
 	$(RM) marley-config.bak
 
 marley: $(MARLEY_LIBS) marley.o marley-config $(MAYBE_MARSUM)
-	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) -o $@ -L. \
+	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) -o $@ -L. \
 	  -l$(SHARED_LIB_NAME) $(ROOT_SHARED_LIB_LDFLAGS) $(ROOT_LDFLAGS) \
-	  $(GSL_LDFLAGS) -Wl,-rpath -Wl,$(libdir):$(shell pwd) marley.o
+	  $(GSL_LDFLAGS) $(HEPMC3_LDFLAGS) -Wl,-rpath -Wl,$(libdir):$(shell pwd) marley.o
 
 $(TEST_EXECUTABLE): $(TEST_OBJECTS) $(MARLEY_LIBS)
-	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) -o $@ -L. \
+	$(CXX) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) -o $@ -L. \
 	  -l$(SHARED_LIB_NAME) $(ROOT_SHARED_LIB_LDFLAGS) $(ROOT_LDFLAGS) \
-	  $(GSL_LDFLAGS) -o $@ $(TEST_OBJECTS)
+	  $(GSL_LDFLAGS) $(HEPMC3_LDFLAGS) -o $@ $(TEST_OBJECTS)
 
 marg4: $(MARLEY_LIBS)
 	$(RM) ../examples/marg4/build/marg4

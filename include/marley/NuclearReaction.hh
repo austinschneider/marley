@@ -23,7 +23,6 @@
 #include <vector>
 
 #include "marley/DecayScheme.hh"
-#include "marley/Event.hh"
 #include "marley/Level.hh"
 #include "marley/MassTable.hh"
 #include "marley/MatrixElement.hh"
@@ -61,8 +60,8 @@ namespace marley {
         { return marley::TargetAtom( pdg_b_ ); }
 
       /// Produces a two-two scattering Event that proceeds via this reaction
-      virtual marley::Event create_event(int particle_id_a,
-        double KEa, marley::Generator& gen) const override;
+      virtual std::shared_ptr< HepMC3::GenEvent > create_event(
+        int particle_id_a, double KEa, marley::Generator& gen) const override;
 
       /// @brief Compute the
       /// <a href="https://en.wikipedia.org/wiki/Beta_decay#Fermi_function">
@@ -180,7 +179,7 @@ namespace marley {
       static std::map<CoulombMode, std::string> coulomb_mode_string_map_;
 
       /// Helper function used by NuclearReaction::create_event()
-      virtual marley::Event make_event_object(double KEa,
+      virtual std::shared_ptr< HepMC3::GenEvent > make_event_object(double KEa,
         double pc_cm, double cos_theta_c_cm, double phi_c_cm, double Ec_cm,
         double Ed_cm, double E_level, int twoJ, const marley::Parity& P)
         const override;

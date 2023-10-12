@@ -28,7 +28,7 @@ namespace marley {
 
       inline virtual ~NucleusDecayer() = default;
 
-      virtual void process_event( marley::Event& event,
+      virtual void process_event( HepMC3::GenEvent& event,
         marley::Generator& gen ) override;
   };
 

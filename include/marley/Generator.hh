@@ -15,12 +15,15 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
+
+// Standard library includes
 #include <limits>
 #include <memory>
 #include <random>
 #include <sstream>
 #include <vector>
 
+// MARLEY includes
 #include "marley/GammaStrengthFunctionModel.hh"
 #include "marley/NeutrinoSource.hh"
 #include "marley/NuclearReaction.hh"
@@ -33,9 +36,15 @@
 #include "marley/Target.hh"
 #include "marley/marley_utils.hh"
 
+namespace HepMC3 {
+  class GenEvent;
+  class GenRunInfo;
+}
+
 namespace marley {
 
   class ChebyshevInterpolatingFunction;
+  class JSON;
   class JSONConfig;
 
   /// @brief The MARLEY Event generator
@@ -52,7 +61,7 @@ namespace marley {
 
       /// @brief Create an Event using the NeutrinoSource, Target, Reaction,
       /// and StructureDatabase objects owned by this Generator
-      marley::Event create_event();
+      std::shared_ptr< HepMC3::GenEvent > create_event();
 
       /// @brief Get the seed used to initialize this Generator
       inline uint_fast64_t get_seed() const;
@@ -257,12 +266,14 @@ namespace marley {
       /// @param KEa The kinetic energy of the projectile (MeV)
       /// @param pdg_atom The nuclear PDG code for the atomic target
       /// @param dir_vec Direction three-vector of the projectile
-      marley::Event create_event( int pdg_a, double KEa, int pdg_atom,
-        const std::array<double, 3>& dir_vec );
+      std::shared_ptr< HepMC3::GenEvent > create_event( int pdg_a, double KEa,
+        int pdg_atom, const std::array<double, 3>& dir_vec );
 
       /// @brief Provides access to the owned ProjectileDirectionRotator
       inline marley::ProjectileDirectionRotator& get_rotator()
         { return rotator_; }
+
+      inline const std::string& json_config() const { return json_config_; }
 
     private:
 
@@ -356,6 +367,16 @@ namespace marley {
       /// circumstances
       bool do_deexcitations_ = true;
 
+      /// @brief Information describing the generator configuration at the
+      /// start of a run. This is saved together with the events in HepMC3
+      /// files.
+      std::shared_ptr< HepMC3::GenRunInfo > run_info_;
+
+      /// @brief String representation of the JSON configuration used to
+      /// initialize the Generator. This will be saved to the output RunInfo
+      /// to assist in resuming an interrupted job.
+      std::string json_config_;
+
       /// @brief Computes the total cross section at fixed energy for all
       /// configured reactions involving a particular target atom.
       /// @details Atom fractions in the owned Target are ignored by this
@@ -377,6 +398,18 @@ namespace marley {
       /// @return Total cross section (MeV<sup> -2</sup>)
       double total_xs(int pdg_a, double KEa, int pdg_atom,
         std::vector<size_t>* index_vec, std::vector<double>* xsec_vec) const;
+
+      /// @brief Initializes the owned GenRunInfo object that will be used
+      /// to associate run metadata with the output events
+      void set_up_run_info();
+
+      /// @brief Add final pieces of metadata (e.g., the RNG state) to an
+      /// otherwise complete event
+      void finish_event_metadata( HepMC3::GenEvent& ev );
+
+      /// @brief Sets the saved string copy of the JSON configuration used to
+      /// initialize the generator
+      void set_json_config( const marley::JSON& jc );
   };
 
   // Inline function definitions

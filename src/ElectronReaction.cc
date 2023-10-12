@@ -150,8 +150,8 @@ double marley::ElectronReaction::diff_xs(int pdg_a, double KEa,
 
 // Creates an event object by sampling the appropriate quantities and
 // performing kinematic calculations
-marley::Event marley::ElectronReaction::create_event(int pdg_a, double KEa,
-  marley::Generator& gen) const
+std::shared_ptr< HepMC3::GenEvent > marley::ElectronReaction::create_event(
+  int pdg_a, double KEa, marley::Generator& gen) const
 {
   // If the projectile's PDG code doesn't match that stored in this object,
   // complain and refuse to create an event.

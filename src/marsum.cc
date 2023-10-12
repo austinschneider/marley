@@ -23,25 +23,21 @@
   #error Building the marsum executable requires ROOT
 #endif
 
+// HepMC3 includes
+#include "HepMC3/FourVector.h"
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenParticle.h"
+
 // ROOT includes
 #include "TFile.h"
 #include "TTree.h"
 
 // MARLEY includes
+#include "marley/hepmc3_utils.hh"
 #include "marley/marley_utils.hh"
-#include "marley/Event.hh"
-#include "marley/RootEventFileReader.hh"
-#include "marley/Particle.hh"
+#include "marley/EventFileReader.hh"
 
-namespace {
-  // Index of the first final-state particle that is not the
-  // ejectile or residue (first de-excitation product).
-  // TODO: Make this easier to maintain. If you change the layout of
-  // marley::Event, this will break.
-  constexpr size_t FIRST_PROD_IDX = 2u;
-}
-
-int main(int argc, char* argv[]) {
+int main( int argc, char* argv[] ) {
 
   // If the user has not supplied enough command-line arguments, display the
   // standard help message and exit
@@ -82,55 +78,55 @@ int main(int argc, char* argv[]) {
   }
 
   TFile out_tfile( argv[1], "recreate" );
-  TTree* out_tree = new TTree("mst", "MARLEY summary tree");
+  TTree* out_tree = new TTree( "mst", "MARLEY summary tree" );
 
   // projectile branches
-  out_tree->Branch("pdgv", &pdgv, "pdgv/I");
-  out_tree->Branch("Ev", &Ev, "Ev/D");
-  out_tree->Branch("KEv", &KEv, "KEv/D");
-  out_tree->Branch("pxv", &pxv, "pxv/D");
-  out_tree->Branch("pyv", &pyv, "pyv/D");
-  out_tree->Branch("pzv", &pzv, "pzv/D");
+  out_tree->Branch( "pdgv", &pdgv, "pdgv/I" );
+  out_tree->Branch( "Ev", &Ev, "Ev/D" );
+  out_tree->Branch( "KEv", &KEv, "KEv/D" );
+  out_tree->Branch( "pxv", &pxv, "pxv/D" );
+  out_tree->Branch( "pyv", &pyv, "pyv/D" );
+  out_tree->Branch( "pzv", &pzv, "pzv/D" );
 
   // target branches
-  out_tree->Branch("pdgt", &pdgt, "pdgt/I");
-  out_tree->Branch("Mt", &Mt, "Mt/D");
+  out_tree->Branch( "pdgt", &pdgt, "pdgt/I" );
+  out_tree->Branch( "Mt", &Mt, "Mt/D" );
 
   // ejectile branches
-  out_tree->Branch("pdgl", &pdgl, "pdgl/I");
-  out_tree->Branch("El", &El, "El/D");
-  out_tree->Branch("KEl", &KEl, "KEl/D");
-  out_tree->Branch("pxl", &pxl, "pxl/D");
-  out_tree->Branch("pyl", &pyl, "pyl/D");
-  out_tree->Branch("pzl", &pzl, "pzl/D");
+  out_tree->Branch( "pdgl", &pdgl, "pdgl/I" );
+  out_tree->Branch( "El", &El, "El/D" );
+  out_tree->Branch( "KEl", &KEl, "KEl/D" );
+  out_tree->Branch( "pxl", &pxl, "pxl/D" );
+  out_tree->Branch( "pyl", &pyl, "pyl/D" );
+  out_tree->Branch( "pzl", &pzl, "pzl/D" );
 
   // residue branches
-  out_tree->Branch("pdgr", &pdgr, "pdgr/I");
-  out_tree->Branch("Er", &Er, "Er/D");
-  out_tree->Branch("KEr", &KEr, "KEr/D");
-  out_tree->Branch("pxr", &pxr, "pxr/D");
-  out_tree->Branch("pyr", &pyr, "pyr/D");
-  out_tree->Branch("pzr", &pzr, "pzr/D");
+  out_tree->Branch( "pdgr", &pdgr, "pdgr/I" );
+  out_tree->Branch( "Er", &Er, "Er/D" );
+  out_tree->Branch( "KEr", &KEr, "KEr/D" );
+  out_tree->Branch( "pxr", &pxr, "pxr/D" );
+  out_tree->Branch( "pyr", &pyr, "pyr/D" );
+  out_tree->Branch( "pzr", &pzr, "pzr/D" );
 
   // Nuclear excitation energy branch
-  out_tree->Branch("Ex", &Ex, "Ex/D");
+  out_tree->Branch( "Ex", &Ex, "Ex/D" );
 
   // Spin and parity branches
-  out_tree->Branch("twoJ", &twoJ, "twoJ/I");
-  out_tree->Branch("parity", &par, "parity/I");
+  out_tree->Branch( "twoJ", &twoJ, "twoJ/I" );
+  out_tree->Branch( "parity", &par, "parity/I" );
 
   // De-excitation products (final-state particles other than the
   // ejectile and ground-state residue)
-  out_tree->Branch("np", &np, "np/I");
-  out_tree->Branch("pdgp", PDGs.data(), "pdgp[np]/I");
-  out_tree->Branch("Ep",  Es.data(), "Ep[np]/D");
-  out_tree->Branch("KEp", KEs.data(), "KEp[np]/D");
-  out_tree->Branch("pxp", pXs.data(), "pxp[np]/D");
-  out_tree->Branch("pyp", pYs.data(), "pyp[np]/D");
-  out_tree->Branch("pzp", pZs.data(), "pzp[np]/D");
+  out_tree->Branch( "np", &np, "np/I" );
+  out_tree->Branch( "pdgp", PDGs.data(), "pdgp[np]/I" );
+  out_tree->Branch( "Ep",  Es.data(), "Ep[np]/D" );
+  out_tree->Branch( "KEp", KEs.data(), "KEp[np]/D" );
+  out_tree->Branch( "pxp", pXs.data(), "pxp[np]/D" );
+  out_tree->Branch( "pyp", pYs.data(), "pyp[np]/D" );
+  out_tree->Branch( "pzp", pZs.data(), "pzp[np]/D" );
 
   // Flux-averaged total cross section
-  out_tree->Branch("xsec", &flux_avg_tot_xsec, "xsec/D");
+  out_tree->Branch( "xsec", &flux_avg_tot_xsec, "xsec/D" );
 
   // Prepare to read the input file(s)
   std::vector<std::string> input_file_names;
@@ -140,15 +136,15 @@ int main(int argc, char* argv[]) {
   for ( const auto& file_name : input_file_names ) {
 
     // Open the current file for reading
-    marley::RootEventFileReader refr( file_name );
+    marley::EventFileReader efr( file_name );
     std::cout << "Opened file \"" << file_name << "\"\n";
 
     // Temporary object to use for reading in saved events
-    marley::Event ev;
+    HepMC3::GenEvent ev;
 
     // Event loop
     int event_num = 0;
-    while ( refr >> ev ) {
+    while ( efr >> ev ) {
 
       if ( event_num % 1000 == 0 ) std::cout << "Event " << event_num << '\n';
 
@@ -159,59 +155,107 @@ int main(int argc, char* argv[]) {
       pYs.clear();
       pZs.clear();
 
-      pdgv = ev.projectile().pdg_code();
-      Ev = ev.projectile().total_energy();
-      KEv = ev.projectile().kinetic_energy();
-      pxv = ev.projectile().px();
-      pyv = ev.projectile().py();
-      pzv = ev.projectile().pz();
+      auto projectile = marley_hepmc3::get_projectile( ev );
+      pdgv = projectile->pid();
 
-      pdgt = ev.target().pdg_code();
-      Mt = ev.target().mass();
+      double mv = projectile->generated_mass();
+      const HepMC3::FourVector& p4v = projectile->momentum();
 
-      pdgl = ev.ejectile().pdg_code();
-      El = ev.ejectile().total_energy();
-      KEl = ev.ejectile().kinetic_energy();
-      pxl = ev.ejectile().px();
-      pyl = ev.ejectile().py();
-      pzl = ev.ejectile().pz();
+      Ev = p4v.e();
+      KEv = std::max( 0., Ev - mv );
+      pxv = p4v.px();
+      pyv = p4v.py();
+      pzv = p4v.pz();
 
-      pdgr = ev.residue().pdg_code();
-      Er = ev.residue().total_energy();
-      KEr = ev.residue().kinetic_energy();
-      pxr = ev.residue().px();
-      pyr = ev.residue().py();
-      pzr = ev.residue().pz();
+      auto target = marley_hepmc3::get_target( ev );
+      pdgt = target->pid();
+      Mt = target->generated_mass();
 
-      Ex = ev.Ex();
-      twoJ = ev.twoJ();
-      par = static_cast<int>( ev.parity() );
-      flux_avg_tot_xsec = refr.flux_averaged_xsec();
+      auto ejectile = marley_hepmc3::get_ejectile( ev );
+      pdgl = ejectile->pid();
 
-      const auto& fparts = ev.get_final_particles();
-      np = fparts.size() - FIRST_PROD_IDX;
-      for ( size_t j = FIRST_PROD_IDX; j < fparts.size(); ++j ) {
-        const auto* fp = fparts.at( j );
-        PDGs.push_back( fp->pdg_code() );
-        Es.push_back( fp->total_energy() );
-        KEs.push_back( fp->kinetic_energy() );
-        pXs.push_back( fp->px() );
-        pYs.push_back( fp->py() );
-        pZs.push_back( fp->pz() );
+      // Object ID number for the ejectile in the event (*not* the same as the
+      // PDG code)
+      int ej_id = ejectile->id();
+
+      double ml = ejectile->generated_mass();
+      const HepMC3::FourVector& p4l = ejectile->momentum();
+
+      El = p4l.e();
+      KEl = std::max( 0., El - ml );
+      pxl = p4l.px();
+      pyl = p4l.py();
+      pzl = p4l.pz();
+
+      auto residue = marley_hepmc3::get_residue( ev );
+      pdgr = residue->pid();
+
+      double mr = residue->generated_mass();
+      const HepMC3::FourVector& p4r = residue->momentum();
+
+      Er = p4r.e();
+      KEr = std::max( 0., Er - mr );
+      pxr = p4r.px();
+      pyr = p4r.py();
+      pzr = p4r.pz();
+
+      // TODO: add error handling here for missing attributes
+      auto Ex_attr = residue->attribute< HepMC3::DoubleAttribute >( "Ex" );
+      Ex = Ex_attr->value();
+
+      auto twoJ_attr = residue->attribute< HepMC3::IntAttribute >( "twoJ" );
+      twoJ = twoJ_attr->value();
+
+      auto parity_attr = residue->attribute< HepMC3::IntAttribute >( "parity" );
+      par = parity_attr->value();
+
+      flux_avg_tot_xsec = efr.flux_averaged_xsec();
+
+      np = 0;
+      const auto& particles = ev.particles();
+      for ( const auto& p : particles ) {
+        // Only save information about final-state particles in the array of
+        // nuclear de-excitation products
+        if ( p->status() != marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS ) {
+          continue;
+        }
+
+        // Skip the ejectile since its information is already saved elsewhere in
+        // the output branches. We use the unique object ID number in the event
+        // (not the same as the PDG code) to check for this
+        if ( p->id() == ej_id ) continue;
+
+        ++np;
+
+        PDGs.push_back( p->pid() );
+
+        double mp = p->generated_mass();
+        const HepMC3::FourVector& p4p = p->momentum();
+
+        double Ep = p4p.e();
+        Es.push_back( Ep );
+
+        double KEp = std::max( 0., Ep - mp );
+        KEs.push_back( KEp );
+
+        pXs.push_back( p4p.px() );
+        pYs.push_back( p4p.py() );
+        pZs.push_back( p4p.pz() );
       }
 
       // Update the branch addresses (manipulating the vectors may have
       // invalidated them)
-      out_tree->SetBranchAddress("pdgp", PDGs.data());
-      out_tree->SetBranchAddress("Ep",  Es.data());
-      out_tree->SetBranchAddress("KEp", KEs.data());
-      out_tree->SetBranchAddress("pxp", pXs.data());
-      out_tree->SetBranchAddress("pyp", pYs.data());
-      out_tree->SetBranchAddress("pzp", pZs.data());
+      out_tree->SetBranchAddress( "pdgp", PDGs.data() );
+      out_tree->SetBranchAddress( "Ep",  Es.data() );
+      out_tree->SetBranchAddress( "KEp", KEs.data() );
+      out_tree->SetBranchAddress( "pxp", pXs.data() );
+      out_tree->SetBranchAddress( "pyp", pYs.data() );
+      out_tree->SetBranchAddress( "pzp", pZs.data() );
 
       out_tree->Fill();
 
       ++event_num;
+
     } // event loop
   } // file loop
 

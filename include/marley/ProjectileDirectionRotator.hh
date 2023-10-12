@@ -22,7 +22,7 @@
 
 namespace marley {
 
-  /// @brief If needed, rotates the coordinate system of an Event so that the
+  /// @brief If needed, rotates the coordinate system of a GenEvent so that the
   /// projectile 3-momentum lies along a desired direction
   class ProjectileDirectionRotator : public EventProcessor {
 
@@ -39,7 +39,7 @@ namespace marley {
       /// @brief Rotates all 3-momenta in the input event so that
       /// the projectile 3-momentum lies along dir_vec_ in the
       /// new coordinate system
-      virtual void process_event( marley::Event& ev,
+      virtual void process_event( HepMC3::GenEvent& ev,
         marley::Generator& gen ) override;
 
       inline const ThreeVector& projectile_direction() const
@@ -66,12 +66,12 @@ namespace marley {
       ThreeVector last_pdir_ = {{ 0., 0., 1. }};
 
       /// @brief RotationMatrix used to rotate the coordinate system
-      /// of the input Event
+      /// of the input GenEvent
       marley::RotationMatrix rot_matrix_;
 
       /// @brief Helper function that does the coordinate system rotation
-      /// @param[in,out] ev Event whose Particle 3-vectors will be rotated
-      void rotate_event( marley::Event& ev );
+      /// @param[in,out] ev GenEvent whose Particle 3-vectors will be rotated
+      void rotate_event( HepMC3::GenEvent& ev );
 
       /// @brief Flag that indicates whether the (rotated) projectile
       /// direction should be sampled isotropically for each event

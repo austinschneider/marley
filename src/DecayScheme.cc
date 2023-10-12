@@ -14,6 +14,7 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
+// Standard library includes
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -22,6 +23,13 @@
 #include <string>
 #include <vector>
 
+// HepMC3 includes
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenParticle.h"
+#include "HepMC3/GenVertex.h"
+
+// MARLEY includes
+#include "marley/hepmc3_utils.hh"
 #include "marley/marley_utils.hh"
 #include "marley/DecayScheme.hh"
 #include "marley/Generator.hh"
@@ -69,8 +77,11 @@ int marley::DecayScheme::pdg() const {
 }
 
 void marley::DecayScheme::do_cascade(marley::Level& initial_level,
-  marley::Event& event, marley::Generator& gen, int qIon)
+  HepMC3::GenEvent& event, marley::Generator& gen,
+  std::shared_ptr< HepMC3::GenParticle >& residue )
 {
+  int qIon = marley_hepmc3::get_particle_charge( *residue );
+
   MARLEY_LOG_DEBUG() << "Beginning gamma cascade at level with energy "
     << initial_level.energy() << " MeV";
 
@@ -80,7 +91,7 @@ void marley::DecayScheme::do_cascade(marley::Level& initial_level,
 
   const marley::MassTable& mt = marley::MassTable::Instance();
 
-  while (!cascade_finished) {
+  while ( !cascade_finished ) {
 
     // Randomly select a gamma to produce
     const marley::Gamma* p_gamma = p_current_level->sample_gamma(gen);
@@ -107,37 +118,53 @@ void marley::DecayScheme::do_cascade(marley::Level& initial_level,
 
       // Create new particle objects to represent the emitted gamma and
       // recoiling nucleus
-      marley::Particle gamma(marley_utils::PHOTON, 0);
+      auto gamma = marley_hepmc3::make_particle( marley_utils::PHOTON,
+        marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, 0.0 );
+
       int pdg = marley_utils::get_nucleus_pid(Z_, A_);
-      marley::Particle nucleus(pdg, mt.get_atomic_mass(pdg)
-        + Exf - qIon*mt.get_particle_mass(marley_utils::ELECTRON), qIon);
 
-      // Sample a direction assuming that the gammas are emitted
-      // isotropically in the nucleus's rest frame.
+      auto nucleus = marley_hepmc3::make_particle( pdg,
+        marley_hepmc3::NUHEPMC_INTERMEDIATE_RESIDUE_STATUS,
+        mt.get_atomic_mass(pdg) + Exf
+        - qIon*mt.get_particle_mass(marley_utils::ELECTRON) );
+
+      // Create a new binary decay vertex
+      auto decay_vtx = std::make_shared< HepMC3::GenVertex >();
+      decay_vtx->set_status( marley_hepmc3::NUHEPMC_GAMMA_DECAY_VERTEX );
+
+      decay_vtx->add_particle_in( residue );
+      decay_vtx->add_particle_out( gamma );
+      decay_vtx->add_particle_out( nucleus );
+
+      event.add_vertex( decay_vtx );
+
+      // We can set the charge attribute now that the daughter nucleus
+      // belongs to the decay vertex (and thus the parent event)
+      marley_hepmc3::set_particle_charge( *nucleus, qIon );
+
+      // Sample a direction assuming that the gammas are emitted isotropically
+      // in the nucleus's rest frame.
       // sample from [-1,1]
-      double gamma_cos_theta = gen.uniform_random_double(-1, 1, true);
+      double gamma_cos_theta = gen.uniform_random_double( -1.0, 1.0, true );
       // sample from [0,2*pi)
-      double gamma_phi = gen.uniform_random_double(0, 2*marley_utils::pi,
-        false);
-
-      marley::Particle& residue = event.residue();
+      double gamma_phi = gen.uniform_random_double( 0., 2.*marley_utils::pi,
+        false );
 
       // Determine the final energies and momenta for the recoiling nucleus and
       // emitted gamma ray. Store them in the final state particle objects.
-      marley_kinematics::two_body_decay(residue, gamma, nucleus,
+      marley_kinematics::two_body_decay( residue, gamma, nucleus,
         gamma_cos_theta, gamma_phi);
 
       // Update the residue for this event to take into account changes from
       // gamma ray emission
-      residue = nucleus;
-
-      // Add the new gamma to the event
-      event.add_final_particle(gamma);
+      residue.swap( nucleus );
     }
   }
 
   MARLEY_LOG_DEBUG() << "Finished gamma cascade at level with energy "
     << p_current_level->energy();
+
+  residue->set_status( marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS );
 }
 
 marley::DecayScheme::DecayScheme(int Z, int A) : Z_(Z), A_(A)

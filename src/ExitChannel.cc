@@ -14,6 +14,8 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
+// MARLEY includes
+#include "marley/hepmc3_utils.hh"
 #include "marley/marley_utils.hh"
 #include "marley/ExitChannel.hh"
 #include "marley/GammaStrengthFunctionModel.hh"
@@ -366,32 +368,36 @@ double marley::GammaContinuumExitChannel::differential_width( double Exf,
 }
 
 void marley::DiscreteExitChannel::do_decay(double& Exf, int& two_Jf,
-  marley::Parity& Pf, const marley::Particle& compound_nucleus,
-  marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-  marley::Generator& gen) const
+  marley::Parity& Pf, const std::shared_ptr< HepMC3::GenParticle >&
+  compound_nucleus, std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+  std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
+  int& qIon, marley::Generator& gen ) const
 {
   Exf = final_level_.energy();
   two_Jf = final_level_.twoJ();
   Pf = final_level_.parity();
   this->prepare_products( compound_nucleus, emitted_particle,
-    residual_nucleus, Exf, gen );
+    residual_nucleus, Exf, qIon, gen );
 }
 
 void marley::ExitChannel::prepare_products(
-  const marley::Particle& compound_nucleus, marley::Particle& emitted_particle,
-  marley::Particle& residual_nucleus, double Exf, marley::Generator& gen) const
+  const std::shared_ptr< HepMC3::GenParticle >& compound_nucleus,
+  std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+  std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
+  double Exf, int& qf, marley::Generator& gen ) const
 {
   const auto& mt = marley::MassTable::Instance();
   int ep_pdg = this->emitted_particle_pdg();
   double ep_mass = mt.get_particle_mass( ep_pdg );
 
-  emitted_particle = marley::Particle( ep_pdg, ep_mass );
+  emitted_particle = marley_hepmc3::make_particle( ep_pdg,
+    marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, ep_mass );
 
   // Proton number of the emitted particle
   int ep_Z = marley_utils::get_particle_Z( ep_pdg );
 
   // Final ion charge after particle emission
-  int qf = qi_ - ep_Z;
+  qf = qi_ - ep_Z;
 
   double me = mt.get_particle_mass( marley_utils::ELECTRON );
   int remnant_pdg = this->final_nucleus_pdg();
@@ -401,7 +407,8 @@ void marley::ExitChannel::prepare_products(
   // final nuclide.
   double Mfgs_ion = mt.get_atomic_mass( remnant_pdg ) - qf*me;
 
-  residual_nucleus = marley::Particle( remnant_pdg, Mfgs_ion + Exf, qf );
+  residual_nucleus = marley_hepmc3::make_particle( remnant_pdg,
+    marley_hepmc3::NUHEPMC_INTERMEDIATE_RESIDUE_STATUS, Mfgs_ion + Exf );
 
   // Now that the PDG codes, masses, and net charges of the binary decay
   // products have been set, choose a direction for the emitted particle.
@@ -418,7 +425,7 @@ void marley::ExitChannel::prepare_products(
     residual_nucleus, cos_theta_emitted_particle, phi_emitted_particle );
 }
 
-double marley::ContinuumExitChannel::sample_Exf(marley::Generator& gen) const
+double marley::ContinuumExitChannel::sample_Exf( marley::Generator& gen ) const
 {
   // The maximum accessible excitation energy for this exit channel. It
   // will be used when creating the ChebyshevInterpolatingFunction below
@@ -444,22 +451,23 @@ double marley::ContinuumExitChannel::sample_Exf(marley::Generator& gen) const
   return Exf;
 }
 
-void marley::ContinuumExitChannel::do_decay(double& Exf, int& two_Jf,
-  marley::Parity& Pf, const marley::Particle& compound_nucleus,
-  marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-  marley::Generator& gen) const
+void marley::ContinuumExitChannel::do_decay( double& Exf, int& two_Jf,
+  marley::Parity& Pf, const std::shared_ptr< HepMC3::GenParticle >&
+  compound_nucleus, std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+  std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
+  int& qIon, marley::Generator& gen ) const
 {
   Exf = this->sample_Exf( gen );
 
   // Sample a final nuclear spin-parity, unless the user has
   // explicitly turned this off (presumably in unit tests
   // where we only care about the final excitation energy).
-  if ( !skip_jpi_sampling_ ) sample_spin_parity(Exf, two_Jf, Pf, gen);
+  if ( !skip_jpi_sampling_ ) sample_spin_parity( Exf, two_Jf, Pf, gen );
 
   // TODO: sample a sub-Jpi variable set (e.g., l + j)
 
   this->prepare_products( compound_nucleus, emitted_particle,
-    residual_nucleus, Exf, gen );
+    residual_nucleus, Exf, qIon, gen );
 }
 
 void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,

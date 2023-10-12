@@ -288,6 +288,9 @@ marley::Generator marley::JSONConfig::create_generator() const
   gen.dont_normalize_E_pdf_ = false;
   gen.normalize_E_pdf();
 
+  // Save a copy of the JSON settings used to configure the generator
+  gen.set_json_config( json_ );
+
   // Now we're all ready to go. Log the flux-averaged total cross section
   // value before returning the fully-configured generator.
   double avg_tot_xs = gen.flux_averaged_total_xs(); // MeV^(-2)
@@ -299,7 +302,7 @@ marley::Generator marley::JSONConfig::create_generator() const
 }
 
 //------------------------------------------------------------------------------
-void marley::JSONConfig::prepare_direction(marley::Generator& gen) const {
+void marley::JSONConfig::prepare_direction( marley::Generator& gen ) const {
   // Get the incident neutrino direction if the user has specified one
   if ( json_.has_key("direction") ) {
 

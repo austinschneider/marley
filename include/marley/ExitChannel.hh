@@ -78,11 +78,15 @@ namespace marley {
       /// @param[out] emitted_particle Particle emitted in the de-excitation
       /// @param[out] residual_nucleus Final-state nucleus after particle
       /// emission
+      /// @param[out] qIon Charge (in units of the elementary charge) of
+      /// the final-state nucleus (ion) after particle emission
+
       /// @param gen Generator to use for random sampling
-      virtual void do_decay(double& Exf, int& two_Jf,
-        marley::Parity& Pf, const marley::Particle& compound_nucleus,
-        marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-        marley::Generator& gen) const = 0;
+      virtual void do_decay( double& Exf, int& two_Jf,
+        marley::Parity& Pf, const std::shared_ptr< HepMC3::GenParticle >&
+        compound_nucleus, std::shared_ptr< HepMC3::GenParticle >&
+        emitted_particle, std::shared_ptr< HepMC3::GenParticle >&
+        residual_nucleus, int& qIon, marley::Generator& gen ) const = 0;
 
       /// @brief Convert an iterator that points to an ExitChannel object into
       /// an iterator to the ExitChannel's width_ member variable.
@@ -119,10 +123,13 @@ namespace marley {
       /// @param[out] residual_nucleus Particle representing the daughter
       /// nucleus
       /// @param[in] Exf Excitation energy of the daughter nucleus
+      /// @param[out] qf Final ion charge after particle emission
       /// @param gen Generator to use for random sampling
-      virtual void prepare_products(const marley::Particle& compound_nucleus,
-        marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-        double Exf, marley::Generator& gen) const;
+      virtual void prepare_products(
+        const std::shared_ptr< HepMC3::GenParticle >& compound_nucleus,
+        std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+        std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
+        double Exf, int& qf, marley::Generator& gen ) const;
 
       /// PDG code for the initial nucleus
       int pdgi_;
@@ -163,10 +170,12 @@ namespace marley {
       /// @param[in] flev Reference to the final-state nuclear level
       DiscreteExitChannel( const marley::Level& flev ) : final_level_( flev ) {}
 
-      virtual void do_decay(double& Ex, int& two_J,
-        marley::Parity& Pi, const marley::Particle& compound_nucleus,
-        marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-        marley::Generator& gen) const final override;
+      virtual void do_decay( double& Ex, int& two_J,
+        marley::Parity& Pi, const std::shared_ptr< HepMC3::GenParticle >&
+        compound_nucleus, std::shared_ptr< HepMC3::GenParticle >&
+        emitted_particle, std::shared_ptr< HepMC3::GenParticle >&
+        residual_nucleus, int& qIon, marley::Generator& gen )
+        const final override;
 
       inline virtual bool is_continuum() const final override { return false; }
 
@@ -254,10 +263,12 @@ namespace marley {
       /// construction
       virtual void compute_total_width() final override;
 
-      virtual void do_decay(double& Ex, int& two_J,
-        marley::Parity& Pi, const marley::Particle& compound_nucleus,
-        marley::Particle& emitted_particle, marley::Particle& residual_nucleus,
-        marley::Generator& gen) const final override;
+      virtual void do_decay( double& Ex, int& two_J,
+        marley::Parity& Pi, const std::shared_ptr< HepMC3::GenParticle >&
+        compound_nucleus, std::shared_ptr< HepMC3::GenParticle >&
+        emitted_particle, std::shared_ptr< HepMC3::GenParticle >&
+        residual_nucleus, int& qIon, marley::Generator& gen )
+        const final override;
 
       virtual double differential_width( double Exf,
         bool store_jpi_widths = false ) const = 0;

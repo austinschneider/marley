@@ -18,7 +18,6 @@
 #include <functional>
 #include <string>
 
-#include "Event.hh"
 #include "MassTable.hh"
 #include "Reaction.hh"
 
@@ -51,8 +50,8 @@ namespace marley {
         const override;
 
       // Creates an event object for this reaction using the generator gen
-      virtual marley::Event create_event(int particle_id_a, double KEa,
-        marley::Generator& gen) const override;
+      virtual std::shared_ptr< HepMC3::GenEvent > create_event(
+        int particle_id_a, double KEa, marley::Generator& gen) const override;
 
       inline virtual double threshold_kinetic_energy() const override
         { return KEa_threshold_; }

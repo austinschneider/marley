@@ -14,19 +14,28 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
+// Standard library includes
 #include <chrono>
 #include <cmath>
 #include <limits>
 #include <string>
 
+// HepMC3 includes
+#include "HepMC3/Attribute.h"
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenRunInfo.h"
+
+// MARLEY includes
+#include "marley/marley_utils.hh"
+#include "marley/hepmc3_utils.hh"
 #include "marley/ChebyshevInterpolatingFunction.hh"
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
+#include "marley/JSON.hh"
 #include "marley/Logger.hh"
 #include "marley/NucleusDecayer.hh"
 #include "marley/Reaction.hh"
 #include "marley/StructureDatabase.hh"
-#include "marley/marley_utils.hh"
 
 // The default constructor uses the system time as the seed and a
 // default-constructured monoenergetic neutrino source. No reactions are
@@ -34,21 +43,21 @@
 // default-constructed Generator.
 marley::Generator::Generator()
   : seed_( std::chrono::system_clock::now().time_since_epoch().count() ),
-  source_(new marley::MonoNeutrinoSource),
-  structure_db_(new marley::StructureDatabase)
+  source_( new marley::MonoNeutrinoSource ),
+  structure_db_( new marley::StructureDatabase )
 {
   print_logo();
-  reseed(seed_);
+  reseed( seed_ );
 }
 
 // The seed-only constructor is like the default constructor, but it uses
 // a specific initial seed.
-marley::Generator::Generator(uint_fast64_t seed)
-  : seed_(seed), source_(new marley::MonoNeutrinoSource),
-  structure_db_(new marley::StructureDatabase)
+marley::Generator::Generator( uint_fast64_t seed )
+  : seed_( seed ), source_( new marley::MonoNeutrinoSource ),
+  structure_db_( new marley::StructureDatabase )
 {
   print_logo();
-  reseed(seed_);
+  reseed( seed_ );
 }
 
 // Print the MARLEY logo to the logger stream(s) if you haven't already.
@@ -64,7 +73,12 @@ void marley::Generator::print_logo() {
   }
 }
 
-marley::Event marley::Generator::create_event() {
+std::shared_ptr< HepMC3::GenEvent > marley::Generator::create_event() {
+
+  // (0) Initialize the run information if it has not been set up yet
+  if ( !run_info_ ) {
+    this->set_up_run_info();
+  }
 
   // (1) Select a reacting neutrino energy and reaction using the
   // flux-weighted total cross section(s)
@@ -73,16 +87,57 @@ marley::Event marley::Generator::create_event() {
 
   // (2) Create the prompt two-two scattering event using the
   // sampled reaction object
-  marley::Event ev = r.create_event( source_->get_pid(), E_nu, *this );
+  int pdg_a = source_->get_pid();
+  std::shared_ptr< HepMC3::GenEvent > ev = r.create_event( pdg_a, E_nu, *this );
+
+  // E.C.2 and E.C.3
+  // Save total and reaction cross sections as metadata in the event.
+  // NOTE: the expected value for NuHepMC3 E.C.2 is the total cross section for
+  // the selected projectile and target, so we loop over relevant reactions
+  // manually to avoid imposing target fraction weighting to this particular
+  // calculation.
+  double totXS = 0.;
+  for ( const auto& temp_r : reactions_ ) {
+
+    // Skip reactions which involve a different target atom from the selected
+    // one
+    if ( temp_r->atomic_target().pdg() != r.atomic_target().pdg() ) continue;
+
+    // Skip reactions which involve a different projectile
+    if ( temp_r->pdg_a() != r.pdg_a() ) continue;
+
+    double temp_xsec = temp_r->total_xs( pdg_a, E_nu );
+    if ( temp_xsec > 0. ) {
+      totXS += temp_xsec;
+    }
+
+  }
+
+  // Convert to picobarns
+  totXS *= marley_utils::hbar_c2 * marley_utils::fm2_to_picobarn;
+
+  ev->add_attribute( "TotXS",
+    std::make_shared< HepMC3::DoubleAttribute >( totXS )
+  );
+
+  double procXS = r.total_xs( pdg_a, E_nu ) * marley_utils::hbar_c2
+    * marley_utils::fm2_to_picobarn;
+
+  ev->add_attribute( "ProcXS",
+    std::make_shared< HepMC3::DoubleAttribute >( procXS )
+  );
 
   // (3) If needed, de-excite the final-state residue
   if ( do_deexcitations_ ) {
     marley::NucleusDecayer nd;
-    nd.process_event( ev, *this );
+    nd.process_event( *ev, *this );
   }
 
   // (4) If needed, rotate the event to match the desired projectile direction
-  rotator_.process_event( ev, *this );
+  rotator_.process_event( *ev, *this );
+
+  // (5) Finish adding metadata to the event object
+  this->finish_event_metadata( *ev );
 
   // Return the completed event object
   return ev;
@@ -96,13 +151,13 @@ void marley::Generator::seed_using_state_string(
   strstr >> rand_gen_;
 }
 
-void marley::Generator::reseed(uint_fast64_t seed) {
+void marley::Generator::reseed( uint_fast64_t seed ) {
   // This is an attempt to do a decent job of seeding the random number
   // generator, but optimally accomplishing this can be tricky (see, for
   // example, http://www.pcg-random.org/posts/cpp-seeding-surprises.html)
   seed_ = seed;
-  std::seed_seq seed_sequence{seed_};
-  rand_gen_.seed(seed_sequence);
+  std::seed_seq seed_sequence{ seed_ };
+  rand_gen_.seed( seed_sequence );
 
   MARLEY_LOG_INFO() << "Seeded random number generator with " << seed_;
 }
@@ -170,8 +225,8 @@ void marley::Generator::normalize_E_pdf() {
 // determines whether or not max is included in the range. That is,
 // when inclusive == false, the sampling is done on the interval [min, max),
 // while inclusive == true uses [min, max].
-double marley::Generator::uniform_random_double(double min, double max,
-  bool inclusive)
+double marley::Generator::uniform_random_double( double min, double max,
+  bool inclusive )
 {
   // Defaults to sampling from [0,1). We will always
   // explicitly supply the upper and lower bounds to
@@ -216,9 +271,9 @@ double marley::Generator::uniform_random_double(double min, double max,
 /// (say, max_search_tolerance = 1e-8, while many neutrino cross sections of
 /// interest for MARLEY are less than 1e-40 cm^2), MARLEY normalizes all
 /// probability density functions to unity before using rejection sampling.
-double marley::Generator::rejection_sample(const std::function<double(double)>& f,
-  double xmin, double xmax, double& fmax, double safety_factor,
-  double max_search_tolerance)
+double marley::Generator::rejection_sample(
+  const std::function<double(double)>& f, double xmin, double xmax,
+  double& fmax, double safety_factor, double max_search_tolerance )
 {
   // If we were passed the value marley_utils::UNKNOWN_MAX for fmax, then this
   // signals that we need to search for the function maximum ourselves.
@@ -232,20 +287,20 @@ double marley::Generator::rejection_sample(const std::function<double(double)>& 
 
     // Maximize the function and multiply by a safety factor just
     // in case we didn't quite find the exact peak
-    fmax = marley_utils::maximize(f, xmin, xmax, max_search_tolerance,
-      x_at_max) * safety_factor;
+    fmax = marley_utils::maximize( f, xmin, xmax, max_search_tolerance,
+      x_at_max ) * safety_factor;
   }
 
   double x, y, val;
 
   do {
     // Sample x value uniformly from [xmin, xmax]
-    x = uniform_random_double(xmin, xmax, true);
+    x = uniform_random_double( xmin, xmax, true );
 
     // Sample y uniformly from [0, fmax]
-    y = uniform_random_double(0, fmax, true);
+    y = uniform_random_double( 0., fmax, true );
 
-    val = f(x);
+    val = f( x );
     if ( val > fmax ) {
 
       MARLEY_LOG_WARNING() << "PDF value f(x) = "
@@ -264,7 +319,7 @@ double marley::Generator::rejection_sample(const std::function<double(double)>& 
   return x;
 }
 
-double marley::Generator::E_pdf(double E) {
+double marley::Generator::E_pdf( double E ) {
 
   // Initialize the return value to zero
   double pdf = 0.;
@@ -304,14 +359,14 @@ double marley::Generator::E_pdf(double E) {
     // Multiply the total cross section by the neutrino spectrum
     // from the source object to get the (unnormalized) PDF
     // for sampling reacting neutrino energies.
-    pdf *= source_->pdf(E);
+    pdf *= source_->pdf( E );
   }
   else {
     // If the user has specifically requested it, don't weight the
     // energy PDF by the cross section(s), as long as at least one of them
     // is non-vanishing
     if ( pdf <= 0. ) return 0.;
-    pdf = source_->pdf(E);
+    pdf = source_->pdf( E );
   }
 
   //  Divide by the normalization factor (computed when this source
@@ -319,10 +374,10 @@ double marley::Generator::E_pdf(double E) {
   return pdf / norm_;
 }
 
-marley::Reaction& marley::Generator::sample_reaction(double& E) {
-  if ( reactions_.empty() ) throw marley::Error("Cannot sample"
+marley::Reaction& marley::Generator::sample_reaction( double& E ) {
+  if ( reactions_.empty() ) throw marley::Error( "Cannot sample"
     " a reaction in marley::Generator::sample_reaction(). The vector of"
-    " marley::Reaction objects owned by this generator is empty.");
+    " marley::Reaction objects owned by this generator is empty." );
 
   // Store the "old" value of E_pdf_max_, i.e., the one we had before calling
   // rejection_sample(). This will be used to check for problems.
@@ -330,9 +385,9 @@ marley::Reaction& marley::Generator::sample_reaction(double& E) {
 
   // TODO: protect against source_ changing E_min or E_max after you compute
   // the normalization factor norm_ in marley::Generator::init()
-  E = rejection_sample([this](double E_nu)
+  E = rejection_sample( [this](double E_nu)
     -> double { return this->E_pdf(E_nu); }, source_->get_Emin(),
-    source_->get_Emax(), E_pdf_max_);
+    source_->get_Emax(), E_pdf_max_ );
 
   // If the value of max changed after the call to rejection_sample() and the
   // old value wasn't UNKNOWN_MAX, then the rejection sampling routine must
@@ -348,9 +403,9 @@ marley::Reaction& marley::Generator::sample_reaction(double& E) {
         << " using a rejection method to sample reacting neutrino energies.\n"
         << "This may occur when, e.g., an incident neutrino flux"
         << " is used that includes multiple sharp peaks.\n"
-        << "To avoid biasing the energy distribution, please rerun the simulation"
-        << " after adding the following line to the MARLEY job configuration"
-        << " file:\n"
+        << "To avoid biasing the energy distribution, please rerun the"
+        << " simulation after adding the following line to the MARLEY job"
+        << " configuration file:\n"
         << "    energy_pdf_max: " << E_pdf_max_ << ",\n"
         << "If this error message persists after raising energy_pdf_max to a"
         << " relatively high value, please contact the MARLEY developers for"
@@ -358,8 +413,8 @@ marley::Reaction& marley::Generator::sample_reaction(double& E) {
       issued_long_error_message = true;
     }
     else {
-      MARLEY_LOG_ERROR() << "The maximum PDF value for sampling reacting neutrino"
-       << " energies was exceeded again. The new estimated maximum is"
+      MARLEY_LOG_ERROR() << "The maximum PDF value for sampling reacting"
+       << " neutrino energies was exceeded again. The new estimated maximum is"
        << "\n    energy_pdf_max: " << E_pdf_max_ << ',';
     }
   }
@@ -386,7 +441,7 @@ const marley::Target& marley::Generator::get_target() const {
 }
 
 void marley::Generator::set_source(
-  std::unique_ptr<marley::NeutrinoSource> source)
+  std::unique_ptr<marley::NeutrinoSource> source )
 {
   // If we're passed a nullptr, then don't bother to do anything
   if ( source ) {
@@ -403,7 +458,8 @@ void marley::Generator::set_source(
   }
 }
 
-void marley::Generator::add_reaction(std::unique_ptr<marley::Reaction> reaction)
+void marley::Generator::add_reaction(
+  std::unique_ptr<marley::Reaction> reaction )
 {
   // If we're passed a nullptr, then don't bother to do anything
   if ( reaction ) {
@@ -440,7 +496,7 @@ marley::StructureDatabase& marley::Generator::get_structure_db() {
 }
 
 void marley::Generator::set_neutrino_direction(
-  const std::array<double, 3>& dir_vec)
+  const std::array<double, 3>& dir_vec )
 {
   rotator_.set_projectile_direction( dir_vec );
 
@@ -455,13 +511,13 @@ void marley::Generator::set_neutrino_direction(
   MARLEY_LOG_INFO() << dir_msg << ')';
 }
 
-void marley::Generator::set_weight_flux(bool should_we_weight) {
+void marley::Generator::set_weight_flux( bool should_we_weight ) {
   weight_flux_ = should_we_weight;
 }
 
 double marley::Generator::inverse_transform_sample(
   const std::function<double(double)>& f, double xmin, double xmax,
-  double bisection_tolerance)
+  double bisection_tolerance )
 {
   // Build an approximate CDF corresponding to the integral of the input PDF.
   // Use a polynomial approximant at Chebyshev points to do it.
@@ -477,7 +533,7 @@ double marley::Generator::inverse_transform_sample(
 
 double marley::Generator::inverse_transform_sample(
   const marley::ChebyshevInterpolatingFunction& cdf, double xmin, double xmax,
-  double bisection_tolerance)
+  double bisection_tolerance )
 {
   // Sample a probability value uniformly on [0, 1]
   double prob = uniform_random_double(0., 1., true);
@@ -527,7 +583,7 @@ double marley::Generator::flux_averaged_total_xs() const {
   else {
     double source_norm = marley_utils::num_integrate(
       [this](double Ev) -> double { return this->source_->pdf(Ev); },
-      Emin, Emax);
+      Emin, Emax );
 
     // Use the precomputed integral of the reacting neutrino energy PDF
     avg_total_xs = norm_ / source_norm;
@@ -552,7 +608,7 @@ void marley::Generator::set_target( std::unique_ptr<marley::Target> target )
   }
 }
 
-double marley::Generator::total_xs( int pdg_a, double KEa, int pdg_atom) const
+double marley::Generator::total_xs( int pdg_a, double KEa, int pdg_atom ) const
 {
   return this->total_xs( pdg_a, KEa, pdg_atom, nullptr, nullptr );
 }
@@ -590,9 +646,14 @@ double marley::Generator::total_xs( int pdg_a, double KEa, int pdg_atom,
 }
 
 
-marley::Event marley::Generator::create_event( int pdg_a, double KEa,
-  int pdg_atom, const std::array<double, 3>& dir_vec )
+std::shared_ptr< HepMC3::GenEvent > marley::Generator::create_event(
+  int pdg_a, double KEa, int pdg_atom, const std::array<double, 3>& dir_vec )
 {
+  // (0) Initialize the run information if it has not been set up yet
+  if ( !run_info_ ) {
+    this->set_up_run_info();
+  }
+
   // (1) Sample a reaction mode from all configured reactions that can handle
   // the given initial-state parameters
   std::vector<size_t> indices;
@@ -608,20 +669,36 @@ marley::Event marley::Generator::create_event( int pdg_a, double KEa,
   // The total cross section values and indices in the full reactions_ vector
   // have already been loaded into temporary vectors, so we can immediately use
   // those to sample a reaction using a discrete distribution.
-  std::discrete_distribution<size_t> react_dist( xsecs.begin(), xsecs.end() );
+  std::discrete_distribution< size_t > react_dist( xsecs.begin(), xsecs.end() );
   size_t sampled_index = react_dist( rand_gen_ );
   auto& r = reactions_.at( indices.at(sampled_index) );
 
   // (2) Create the prompt two-two scattering event using the sampled reaction
   // object
-  marley::Event ev = r->create_event( pdg_a, KEa, *this );
+  std::shared_ptr< HepMC3::GenEvent > ev = r->create_event( pdg_a, KEa, *this );
+
+  // E.C.2 and E.C.3
+  // Save total and reaction cross sections as metadata in the event
+  double totXS = tot_xsec * marley_utils::hbar_c2
+    * marley_utils::fm2_to_picobarn;
+
+  ev->add_attribute( "TotXS",
+    std::make_shared< HepMC3::DoubleAttribute >( totXS )
+  );
+
+  double procXS = xsecs.at( sampled_index ) * marley_utils::hbar_c2
+    * marley_utils::fm2_to_picobarn;
+
+  ev->add_attribute( "ProcXS",
+    std::make_shared< HepMC3::DoubleAttribute >( procXS )
+  );
 
   // Do the usual post-processing
 
   // (3) If needed, de-excite the final-state residue
   if ( do_deexcitations_ ) {
     marley::NucleusDecayer nd;
-    nd.process_event( ev, *this );
+    nd.process_event( *ev, *this );
   }
 
   // (4) If needed, rotate the event to match the desired projectile direction
@@ -630,7 +707,10 @@ marley::Event marley::Generator::create_event( int pdg_a, double KEa,
   my_rotator.set_projectile_direction( dir_vec );
 
   // Rotate the coordinate system of the event if needed
-  my_rotator.process_event( ev, *this );
+  my_rotator.process_event( *ev, *this );
+
+  // (5) Finish adding metadata to the event object
+  this->finish_event_metadata( *ev );
 
   // Return the completed event object
   return ev;
@@ -665,4 +745,86 @@ double marley::Generator::total_xs( int pdg_a, double KEa ) const {
   }
 
   return tot_xsec;
+}
+
+void marley::Generator::set_up_run_info() {
+
+  // G.R.1
+  run_info_ = std::make_shared< HepMC3::GenRunInfo >();
+
+  // G.R.2
+  run_info_->add_attribute( "NuHepMC.Version.Major",
+    std::make_shared< HepMC3::IntAttribute >(
+      marley_hepmc3::NUHEPMC_MAJOR_VERSION )
+  );
+
+  run_info_->add_attribute( "NuHepMC.Version.Minor",
+    std::make_shared< HepMC3::IntAttribute >(
+      marley_hepmc3::NUHEPMC_MINOR_VERSION )
+  );
+
+  run_info_->add_attribute( "NuHepMC.Version.Patch",
+    std::make_shared< HepMC3::IntAttribute >(
+      marley_hepmc3::NUHEPMC_PATCH_VERSION )
+  );
+
+  // G.R.3
+  run_info_->tools().emplace_back(
+    HepMC3::GenRunInfo::ToolInfo{ "MARLEY", MARLEY_VERSION,
+      MARLEY_GIT_REVISION }
+  );
+
+  // G.R.4
+  marley_hepmc3::prepare_process_metadata( *run_info_ );
+
+  // G.R.5
+  marley_hepmc3::prepare_vertex_status_metadata( *run_info_ );
+
+  // G.R.6
+  marley_hepmc3::prepare_particle_status_metadata( *run_info_ );
+
+  // G.R.7
+  run_info_->set_weight_names( { "CV" } );
+
+  // G.R.8
+  marley_hepmc3::prepare_non_standard_pdg_code_metadata( *run_info_ );
+
+  // G.C.1, G.C.4, G.C.5, G.C.6
+  double avg_xsec = this->flux_averaged_total_xs(); // MeV^{-2}
+  marley_hepmc3::apply_nuhepmc_runinfo_conventions( *run_info_, avg_xsec );
+
+  // Save the information needed to restore an interrupted MARLEY job
+  run_info_->add_attribute( "MARLEY.RNGseed",
+    std::make_shared< HepMC3::StringAttribute >( std::to_string(seed_) )
+  );
+
+  run_info_->add_attribute( "MARLEY.JSONconfig",
+    std::make_shared< HepMC3::StringAttribute >( json_config_ )
+  );
+
+}
+
+void marley::Generator::finish_event_metadata( HepMC3::GenEvent& ev ) {
+
+  // Associate the owned run information with the event
+  ev.set_run_info( run_info_ );
+
+  // Add the generator state after the event was completed as a string
+  // attribute. This allows resuming an interrupted job from where it left off.
+  ev.add_attribute( "MARLEY.GeneratorState",
+    std::make_shared< HepMC3::StringAttribute >( this->get_state_string() )
+  );
+
+  // E.R.5
+  // TODO: revisit spatial position when MARLEY is interfaced with a
+  // detector geometry simulation
+  const std::vector< double > lab_pos = { 0., 0., 0. };
+  ev.add_attribute( "LabPos",
+    std::make_shared< HepMC3::VectorDoubleAttribute >( lab_pos )
+  );
+
+}
+
+void marley::Generator::set_json_config( const marley::JSON& jc ) {
+  json_config_ = jc.dump_string();
 }

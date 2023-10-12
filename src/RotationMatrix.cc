@@ -14,12 +14,19 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
+// Standard library includes
 #include <array>
 #include <cmath>
 #include <string>
 
+// HepMC3 includes
+#include "HepMC3/FourVector.h"
+#include "HepMC3/GenParticle.h"
+
+// MARLEY includes
 #include "marley/Error.hh"
 #include "marley/RotationMatrix.hh"
+#include "marley/hepmc3_utils.hh"
 
 using ThreeVector = std::array<double, 3>;
 
@@ -88,18 +95,22 @@ void marley::RotationMatrix::rotate_inplace(ThreeVector& v)
   v = rv;
 }
 
-// Rotates the 3-momentum of a marley::Particle in place
-void marley::RotationMatrix::rotate_particle_inplace(marley::Particle& p)
+// Rotates the 3-momentum of a HepMC3::GenParticle in place
+void marley::RotationMatrix::rotate_particle_inplace( HepMC3::GenParticle& p )
 {
-  ThreeVector rv = {0., 0., 0.};
-  ThreeVector three_momentum = { p.px(), p.py(), p.pz() };
+  HepMC3::FourVector mom4 = p.momentum();
+
+  ThreeVector rv = { 0., 0., 0. };
+  ThreeVector three_momentum = { mom4.px(), mom4.py(), mom4.pz() };
 
   for (unsigned i = 0; i < 3; ++i)
-    rv[i] = dot_product(matrix_[i], three_momentum);
+    rv[i] = dot_product( matrix_[i], three_momentum );
 
-  p.set_px(rv[0]);
-  p.set_py(rv[1]);
-  p.set_pz(rv[2]);
+  mom4.set_px( rv[0] );
+  mom4.set_py( rv[1] );
+  mom4.set_pz( rv[2] );
+
+  p.set_momentum( mom4 );
 }
 
 /// @details <p>This function is a C++11 version of an original rotation matrix

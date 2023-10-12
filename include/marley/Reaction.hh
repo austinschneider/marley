@@ -19,13 +19,17 @@
 #include <string>
 #include <vector>
 
-#include "marley/Event.hh"
 #include "marley/MassTable.hh"
 #include "marley/TargetAtom.hh"
+
+namespace HepMC3 {
+  class GenEvent;
+}
 
 namespace marley {
 
   class Generator;
+  class Parity;
   class StructureDatabase;
 
   /// @brief Abstract base class that represents a two-two scattering reaction
@@ -56,7 +60,7 @@ namespace marley {
       /// @return %Reaction total cross section (MeV<sup> -2</sup>)
       /// @note Functions that override total_xs() should always return zero
       /// if pdg_a != pdg_a_.
-      virtual double total_xs(int pdg_a, double KEa) const = 0;
+      virtual double total_xs( int pdg_a, double KEa ) const = 0;
 
       /// @brief Differential cross section
       /// @f$d\sigma/d\cos\theta_{c}^{\mathrm{CM}}@f$
@@ -66,8 +70,8 @@ namespace marley {
       /// @param cos_theta_c_cm CM frame scattering cosine of the ejectile
       /// @note Functions that override diff_xs() should always return zero
       /// if pdg_a != pdg_a_.
-      virtual double diff_xs(int pdg_a, double KEa,
-        double cos_theta_c_cm) const = 0;
+      virtual double diff_xs( int pdg_a, double KEa,
+        double cos_theta_c_cm ) const = 0;
 
       /// @brief Create an event object for this reaction
       /// @param pdg_a PDG code for the incident projectile
@@ -75,8 +79,8 @@ namespace marley {
       /// @param gen Reference to the Generator to use for random sampling
       /// @note Functions that override create_event() should throw an
       /// Error if pdg_a != pdg_a_.
-      virtual marley::Event create_event(int pdg_a, double KEa,
-        marley::Generator& gen) const = 0;
+      virtual std::shared_ptr< HepMC3::GenEvent > create_event( int pdg_a,
+        double KEa, marley::Generator& gen ) const = 0;
 
       /// @brief Get a string that contains the formula for this reaction
       inline const std::string& get_description() const { return description_; }
@@ -84,7 +88,7 @@ namespace marley {
       /// @brief Get the process type for this reaction
       inline ProcessType process_type() const { return process_type_; }
 
-      static std::string proc_type_to_string(const ProcessType& pt);
+      static std::string proc_type_to_string( const ProcessType& pt );
 
       /// @brief Get the projectile PDG code
       inline int pdg_a() const { return pdg_a_; }
@@ -99,19 +103,19 @@ namespace marley {
 
       /// @brief Returns the target atom involved in this reaction
       /// @details For nuclear reactions, this is identical to the pdg_b_
-      /// member variable. For electron reactions, it is distinct (since particle
-      /// b is the initial struck electron).
+      /// member variable. For electron reactions, it is distinct (since
+      /// particle b is the initial struck electron).
       virtual marley::TargetAtom atomic_target() const = 0;
 
       /// Factory method called by JSONConfig to build
       /// Reaction objects given a file with matrix element data
       static std::vector< std::unique_ptr<Reaction> >
-        load_from_file(const std::string& filename,
-        marley::StructureDatabase& db);
+        load_from_file( const std::string& filename,
+        marley::StructureDatabase& db );
 
       /// Function that returns the ejectile PDG code given the projectile
       /// PDG code and the ProcessType
-      static int get_ejectile_pdg(int pdg_a, ProcessType proc_type);
+      static int get_ejectile_pdg( int pdg_a, ProcessType proc_type );
 
     protected:
 
@@ -145,8 +149,8 @@ namespace marley {
       /// @param[out] Ec_cm Ejectile total energy (MeV) in the CM frame
       /// @param[out] pc_cm Ejectile 3-momentum magnitude (MeV) in the CM frame
       /// @param[out] Ed_cm Residue total energy (MeV) in the CM frame
-      void two_two_scatter(double KEa, double& s, double& Ec_cm,
-        double& pc_cm, double& Ed_cm) const;
+      void two_two_scatter( double KEa, double& s, double& Ec_cm,
+        double& pc_cm, double& Ed_cm ) const;
 
       /// @brief Helper function that makes an event object.
       /// @details This function should be called by
@@ -163,14 +167,14 @@ namespace marley {
       /// @param E_level Residue excitation energy (MeV)
       /// @param twoJ Two times the residue spin
       /// @param P Intrinsic parity of the residue
-      virtual marley::Event make_event_object(double KEa,
-        double pc_cm, double cos_theta_c_cm, double phi_c_cm,
+      virtual std::shared_ptr< HepMC3::GenEvent > make_event_object(
+        double KEa, double pc_cm, double cos_theta_c_cm, double phi_c_cm,
         double Ec_cm, double Ed_cm, double E_level, int twoJ,
-        const marley::Parity& P) const;
+        const marley::Parity& P ) const;
 
       /// Returns a vector of PDG codes for projectiles that participate
       /// in a particular ProcessType
-      static const std::vector<int>& get_projectiles(ProcessType proc_type);
+      static const std::vector<int>& get_projectiles( ProcessType proc_type );
   };
 
 }

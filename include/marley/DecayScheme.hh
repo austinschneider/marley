@@ -21,9 +21,13 @@
 
 #include "marley/Level.hh"
 
+namespace HepMC3 {
+  class GenEvent;
+  class GenParticle;
+}
+
 namespace marley {
 
-  class Event;
   class Generator;
 
   /// @brief Discrete level and &gamma;-ray data for a specific nuclide
@@ -82,8 +86,9 @@ namespace marley {
       /// @param[in] gen Reference to the Generator to use for random sampling
       /// @param qIon Net charge of the atom or ion whose nucleus is
       /// de-exciting
-      void do_cascade(marley::Level& initial_level, marley::Event& event,
-        marley::Generator& gen, int qIon);
+      void do_cascade( marley::Level& initial_level, HepMC3::GenEvent& event,
+        marley::Generator& gen,
+        std::shared_ptr< HepMC3::GenParticle >& residue );
 
       /// @brief Get the atomic number
       inline int Z() const;

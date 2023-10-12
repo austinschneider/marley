@@ -20,9 +20,9 @@
 #include <iostream>
 #include <sstream>
 
+#include "marley/hepmc3_utils.hh"
 #include "marley/marley_utils.hh"
 #include "marley/Error.hh"
-#include "marley/Event.hh"
 #include "marley/Generator.hh"
 #include "marley/Level.hh"
 #include "marley/Logger.hh"
@@ -172,8 +172,8 @@ double marley::NuclearReaction::threshold_kinetic_energy() const {
 
 // Creates an event object by sampling the appropriate quantities and
 // performing kinematic calculations
-marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
-  marley::Generator& gen) const
+std::shared_ptr< HepMC3::GenEvent > marley::NuclearReaction::create_event(
+  int pdg_a, double KEa, marley::Generator& gen) const
 {
   // Check that the projectile supplied to this event is correct. If not, alert
   // the user that this event does not use the requested projectile.
@@ -201,12 +201,13 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // levels, so we won't worry about its default behavior.
   static std::discrete_distribution<size_t> ldist;
 
-  // Compute the total cross section for a transition to each individual nuclear
-  // level, and save the results in the level_weights vector (which will be
-  // cleared by summed_xs_helper() before being loaded with the cross sections).
-  // The summed_xs_helper() method can also be used for differential
-  // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy cos_theta_c_cm
-  // value and request total cross sections by setting the last argument to false.
+  // Compute the total cross section for a transition to each individual
+  // nuclear level, and save the results in the level_weights vector (which
+  // will be cleared by summed_xs_helper() before being loaded with the cross
+  // sections). The summed_xs_helper() method can also be used for differential
+  // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy
+  // cos_theta_c_cm value and request total cross sections by setting the last
+  // argument to false.
   double dummy = 0.;
   double sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
     &level_weights, false);
@@ -228,7 +229,8 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   }
 
   // Complain if the total cross section (the sum of all partial level cross
-  // sections) is zero or negative (the latter is just to cover all possibilities).
+  // sections) is zero or negative (the latter is just to cover all
+  // possibilities).
   if ( sum_of_xsecs <= 0. ) {
     throw marley::Error("Could not create this event. All kinematically"
       " accessible levels for a projectile kinetic energy of "
@@ -357,16 +359,16 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
 
   // Create the preliminary event object (after 2-->2 scattering, but before
   // de-excitation of the residual nucleus)
-  marley::Event event = make_event_object( KEa, pc_cm, cos_theta_c_cm, phi_c_cm,
-    Ec_cm, Ed_cm, E_level, twoJ, P );
+  std::shared_ptr< HepMC3::GenEvent > event = make_event_object( KEa, pc_cm,
+    cos_theta_c_cm, phi_c_cm, Ec_cm, Ed_cm, E_level, twoJ, P );
 
   // Return the preliminary event object (to be processed later by the
   // NucleusDecayer class)
   return event;
 }
 
-// Compute the total reaction cross section (summed over all final nuclear levels)
-// in units of MeV^(-2) using the center of momentum frame.
+// Compute the total reaction cross section (summed over all final nuclear
+// levels) in units of MeV^(-2) using the center of momentum frame.
 double marley::NuclearReaction::total_xs(int pdg_a, double KEa) const {
   double dummy_cos_theta = 0.;
   return summed_xs_helper(pdg_a, KEa, dummy_cos_theta, nullptr, false);
@@ -573,18 +575,22 @@ double marley::NuclearReaction::sample_cos_theta_c_cm(
     -1., 1., max);
 }
 
-marley::Event marley::NuclearReaction::make_event_object(double KEa,
-  double pc_cm, double cos_theta_c_cm, double phi_c_cm, double Ec_cm,
-  double Ed_cm, double E_level, int twoJ, const marley::Parity& P) const
+std::shared_ptr< HepMC3::GenEvent > marley::NuclearReaction::make_event_object(
+  double KEa, double pc_cm, double cos_theta_c_cm, double phi_c_cm,
+  double Ec_cm, double Ed_cm, double E_level, int twoJ,
+  const marley::Parity& P) const
 {
-  marley::Event event = marley::Reaction::make_event_object(KEa, pc_cm,
-    cos_theta_c_cm, phi_c_cm, Ec_cm, Ed_cm, E_level, twoJ, P);
+  std::shared_ptr< HepMC3::GenEvent > event
+    = marley::Reaction::make_event_object( KEa, pc_cm, cos_theta_c_cm,
+    phi_c_cm, Ec_cm, Ed_cm, E_level, twoJ, P );
 
   // Assume that the target is a neutral atom (q_b = 0)
-  event.target().set_charge(0);
+  auto target = marley_hepmc3::get_target( *event );
+  marley_hepmc3::set_particle_charge( *target, 0 );
 
   // Assign the correct charge to the residue
-  event.residue().set_charge(q_d_);
+  auto residue = marley_hepmc3::get_residue( *event );
+  marley_hepmc3::set_particle_charge( *residue, q_d_ );
 
   return event;
 }

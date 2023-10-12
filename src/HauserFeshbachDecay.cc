@@ -20,26 +20,31 @@
 #include "marley/Generator.hh"
 #include "marley/MassTable.hh"
 #include "marley/HauserFeshbachDecay.hh"
+#include "marley/StructureDatabase.hh"
 #include "marley/marley_utils.hh"
+#include "marley/hepmc3_utils.hh"
 
-marley::HauserFeshbachDecay::HauserFeshbachDecay(const marley::Particle&
+marley::HauserFeshbachDecay::HauserFeshbachDecay(
+  const std::shared_ptr< HepMC3::GenParticle >&
   compound_nucleus, double Exi, int twoJi, marley::Parity Pi,
-  marley::StructureDatabase& sdb) : compound_nucleus_(compound_nucleus),
-  Exi_(Exi), twoJi_(twoJi), Pi_(Pi)
+  marley::StructureDatabase& sdb ) : compound_nucleus_( compound_nucleus ),
+  Exi_( Exi ), twoJi_( twoJi ), Pi_( Pi )
 {
   build_exit_channels( sdb );
 }
 
 void marley::HauserFeshbachDecay::build_exit_channels(
-  marley::StructureDatabase& sdb)
+  marley::StructureDatabase& sdb )
 {
   // Remove any pre-existing ExitChannel objects, just in case
   exit_channels_.clear();
 
-  int pdgi = compound_nucleus_.pdg_code();
+  int pdgi = compound_nucleus_->pid();
   int Zi = marley_utils::get_particle_Z( pdgi );
   int Ai = marley_utils::get_particle_A( pdgi );
-  int qi = compound_nucleus_.charge(); // Get net charge of initial ion
+
+  // Get net charge of initial ion
+  int qi = marley_hepmc3::get_particle_charge( *compound_nucleus_ );
 
   // Get the initial nuclear level density (MeV^{-1}) in the vicinity of the
   // initial nuclear level. This will be used to apply an overall normalization
@@ -65,7 +70,7 @@ void marley::HauserFeshbachDecay::build_exit_channels(
     // Get information about the final-state nucleus
     int Zf = Zi - f.get_Z(); // atomic number
     int Af = Ai - f.get_A(); // mass number
-    int pdg_final = marley_utils::get_nucleus_pid(Zf, Af);
+    int pdg_final = marley_utils::get_nucleus_pid( Zf, Af );
 
     // Approximate the ground state mass of the ion formed when the fragment f
     // is emitted by adding (Za - qi) electron masses to the atomic mass for
@@ -74,7 +79,7 @@ void marley::HauserFeshbachDecay::build_exit_channels(
     double Sa = mt.get_fragment_separation_energy( Zi, Ai, fragment_pid );
 
     // Get discrete level data (if any) and models for the final nucleus
-    marley::DecayScheme* ds = sdb.get_decay_scheme(pdg_final);
+    marley::DecayScheme* ds = sdb.get_decay_scheme( pdg_final );
 
     // Determine the maximum excitation energy available after fragment
     // emission in the final nucleus. This is simply the difference
@@ -93,7 +98,7 @@ void marley::HauserFeshbachDecay::build_exit_channels(
 
     // If discrete level data are available for the final nuclide, get decay
     // widths for each accessible level
-    if (ds) {
+    if ( ds ) {
 
       // Get a vector of pointers to levels in the decay scheme. The levels are
       // sorted in order of increasing excitation energy.
@@ -102,7 +107,7 @@ void marley::HauserFeshbachDecay::build_exit_channels(
       // Use the maximum discrete level energy from the decay scheme object as
       // the lower bound for the continuum
       // TODO: consider whether this is the best approach
-      if (levels.size() > 0) E_c_min = levels.back()->energy();
+      if ( levels.size() > 0 ) E_c_min = levels.back()->energy();
 
       // Loop over the final discrete nuclear levels in order of increasing
       // energy until the new level energy exceeds the maximum value. For each
@@ -112,10 +117,10 @@ void marley::HauserFeshbachDecay::build_exit_channels(
       // coefficient and add it to the total.
       for (const auto& level : levels) {
         double Exf = level->energy();
-        if (Exf < Exf_max)  {
+        if ( Exf < Exf_max )  {
 
           // Store information for this decay channel
-	  auto ec = std::make_unique<marley::FragmentDiscreteExitChannel>(
+	  auto ec = std::make_unique< marley::FragmentDiscreteExitChannel >(
             pdgi, qi, Exi_, twoJi_, Pi_, rho_i, sdb, *level, f );
 
           total_width_ += ec->width();
@@ -131,7 +136,7 @@ void marley::HauserFeshbachDecay::build_exit_channels(
     if ( Exf_max > E_c_min ) {
 
       // Create an ExitChannel object to handle decays to the continuum
-      auto ec = std::make_unique<marley::FragmentContinuumExitChannel>(
+      auto ec = std::make_unique< marley::FragmentContinuumExitChannel >(
         pdgi, qi, Exi_, twoJi_, Pi_, rho_i, sdb, E_c_min, f );
 
       total_width_ += ec->width();
@@ -164,8 +169,8 @@ void marley::HauserFeshbachDecay::build_exit_channels(
     for (const auto& level_f : levels) {
       double Exf = level_f->energy();
       if (Exf < Exi_) {
-        auto ec = std::make_unique<marley::GammaDiscreteExitChannel>( pdgi, qi,
-          Exi_, twoJi_, Pi_, rho_i, sdb, *level_f );
+        auto ec = std::make_unique< marley::GammaDiscreteExitChannel >( pdgi,
+          qi, Exi_, twoJi_, Pi_, rho_i, sdb, *level_f );
 
         total_width_ += ec->width();
 
@@ -181,8 +186,8 @@ void marley::HauserFeshbachDecay::build_exit_channels(
 
     // Create an exit channel object to handle gamma-ray emission into the
     // continuum
-    auto ec = std::make_unique<marley::GammaContinuumExitChannel>( pdgi, qi,
-      Exi_, twoJi_, Pi_, rho_i, sdb, E_c_min );
+    auto ec = std::make_unique< marley::GammaContinuumExitChannel >( pdgi,
+      qi, Exi_, twoJi_, Pi_, rho_i, sdb, E_c_min );
 
     total_width_ += ec->width();
 
@@ -190,14 +195,15 @@ void marley::HauserFeshbachDecay::build_exit_channels(
   }
 }
 
-bool marley::HauserFeshbachDecay::do_decay(double& Exf, int& twoJf,
-  marley::Parity& Pf, marley::Particle& emitted_particle,
-  marley::Particle& residual_nucleus, marley::Generator& gen)
+bool marley::HauserFeshbachDecay::do_decay( double& Exf, int& twoJf,
+  marley::Parity& Pf, std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+  std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
+  int& qIon, marley::Generator& gen )
 {
   const auto& ec = this->sample_exit_channel( gen );
 
   ec->do_decay( Exf, twoJf, Pf, compound_nucleus_, emitted_particle,
-    residual_nucleus, gen );
+    residual_nucleus, qIon, gen );
 
   bool discrete_level = !ec->is_continuum();
   return !discrete_level;
@@ -208,7 +214,7 @@ void marley::HauserFeshbachDecay::print(std::ostream& out) const {
   // Needed to print results in conventional units
   constexpr double hbar = 6.58211951e-22; // MeV * s
 
-  out << "Compound nucleus " << compound_nucleus_.pdg_code()
+  out << "Compound nucleus " << compound_nucleus_->pid()
     << " with Ex = " << Exi_ << ", spin = " << twoJi_ / 2;
   if (twoJi_ % 2) out << ".5";
   out << ", and parity = " << Pi_ << '\n';
@@ -235,13 +241,13 @@ void marley::HauserFeshbachDecay::print(std::ostream& out) const {
   }
 }
 
-const std::unique_ptr<marley::ExitChannel>&
+const std::unique_ptr< marley::ExitChannel >&
   marley::HauserFeshbachDecay::sample_exit_channel(
-  marley::Generator& gen) const
+  marley::Generator& gen ) const
 {
   // Throw an error if all decays are impossible
-  if ( total_width_ <= 0. ) throw marley::Error("Cannot sample an exit channel"
-    " for a Hauser-Feshbach decay. All partial decay widths are zero.");
+  if ( total_width_ <= 0. ) throw marley::Error( "Cannot sample an exit channel"
+    " for a Hauser-Feshbach decay. All partial decay widths are zero." );
 
   // Sample an exit channel using a std::discrete distribution and a table of
   // partial decay widths
@@ -250,8 +256,8 @@ const std::unique_ptr<marley::ExitChannel>&
   const auto widths_end
     = marley::ExitChannel::make_width_iterator( exit_channels_.cend() );
 
-  std::discrete_distribution<size_t> exit_channel_dist(widths_begin,
-    widths_end);
+  std::discrete_distribution<size_t> exit_channel_dist( widths_begin,
+    widths_end );
   size_t exit_channel_index = gen.sample_from_distribution( exit_channel_dist );
 
   const auto& ec = exit_channels_.at( exit_channel_index );

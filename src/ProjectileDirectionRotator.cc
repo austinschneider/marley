@@ -14,14 +14,19 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
+// HepMC3 includes
+#include "HepMC3/FourVector.h"
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenParticle.h"
+
 // MARLEY includes
+#include "marley/hepmc3_utils.hh"
 #include "marley/Error.hh"
-#include "marley/Event.hh"
 #include "marley/Generator.hh"
 #include "marley/ProjectileDirectionRotator.hh"
 
 marley::ProjectileDirectionRotator::ProjectileDirectionRotator(
-  const std::array<double, 3>& dir ) : marley::EventProcessor(),
+  const std::array<double, 3>& dir ) : EventProcessor(),
   dir_vec_( dir )
 {
   constexpr ThreeVector null_three_vector = { 0., 0., 0. };
@@ -31,18 +36,18 @@ marley::ProjectileDirectionRotator::ProjectileDirectionRotator(
   dir_vec_ = marley::RotationMatrix::normalize( dir_vec_ );
 }
 
-void marley::ProjectileDirectionRotator::process_event(marley::Event& ev,
-  marley::Generator& gen)
+void marley::ProjectileDirectionRotator::process_event( HepMC3::GenEvent& ev,
+  marley::Generator& gen )
 {
   // First check that the projectile 3-momentum is not a null vector.
   // If it is, don't bother to rotate coordinates. Also don't bother if
   // (somehow) the magnitude of the projectile momentum is negative.
-  const auto& projectile = ev.projectile();
-  double pmom = projectile.momentum_magnitude();
+  const auto projectile = marley_hepmc3::get_projectile( ev );
+  HepMC3::FourVector mom4 = projectile->momentum();
+  double pmom = mom4.p3mod();
   if ( pmom <= 0. ) return;
 
-  ThreeVector pdir = { projectile.px() / pmom, projectile.py() / pmom,
-    projectile.pz() / pmom };
+  ThreeVector pdir = { mom4.px() / pmom, mom4.py() / pmom, mom4.pz() / pmom };
 
   // If random projectile directions have been requested, then sample
   // a new one isotropically for this event
@@ -68,15 +73,9 @@ void marley::ProjectileDirectionRotator::process_event(marley::Event& ev,
   this->rotate_event( ev );
 }
 
-void marley::ProjectileDirectionRotator::rotate_event( marley::Event& ev ) {
+void marley::ProjectileDirectionRotator::rotate_event( HepMC3::GenEvent& ev ) {
 
-  // Rotate the initial particles
-  for ( auto* p : ev.get_initial_particles() ) {
-    rot_matrix_.rotate_particle_inplace( *p );
-  }
-
-  // Rotate the final particles
-  for ( auto* p : ev.get_final_particles() ) {
+  for ( auto& p : ev.particles() ) {
     rot_matrix_.rotate_particle_inplace( *p );
   }
 
