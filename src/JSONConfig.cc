@@ -38,41 +38,42 @@ using CMode = marley::NuclearReaction::CoulombMode;
 // anonymous namespace for helper functions, etc.
 namespace {
 
-  void source_check_positive(double x, const char* description,
-    const char* source_type)
+  void source_check_positive( double x, const char* description,
+    const char* source_type )
   {
-    if (x <= 0.) throw marley::Error(std::string("Non-positive ") + description
-      + " value defined for a " + source_type + " neutrino source");
+    if ( x <= 0. ) throw marley::Error( std::string("Non-positive ")
+      + description + " value defined for a " + source_type
+      + " neutrino source" );
   }
 
   void source_check_nonnegative(double x, const char* description,
     const char* source_type)
   {
-    if (x < 0.) throw marley::Error(std::string("Negative ") + description
-      + " value defined for a " + source_type + " neutrino source");
+    if ( x < 0. ) throw marley::Error( std::string("Negative ") + description
+      + " value defined for a " + source_type + " neutrino source" );
   }
 
-  double source_get_double(const char* name, const marley::JSON& source_spec,
-    const char* description)
+  double source_get_double( const char* name, const marley::JSON& source_spec,
+    const char* description )
   {
-    if (!source_spec.has_key(name)) throw marley::Error(
+    if ( !source_spec.has_key(name) ) throw marley::Error(
       std::string("Missing source.") + name + " key for " + description
-      + " source");
+      + " source" );
     bool ok;
-    double result = source_spec.at(name).to_double(ok);
-    if (!ok) throw marley::Error(std::string("Invalid value given for source.")
-      + name + " key for " + description + " source");
+    double result = source_spec.at( name ).to_double( ok );
+    if ( !ok ) throw marley::Error( std::string("Invalid value given for"
+      " source.") + name + " key for " + description + " source" );
     return result;
   }
 
-  std::vector<double> get_vector(const char* name, const marley::JSON& spec,
-    const char* description)
+  std::vector<double> get_vector( const char* name, const marley::JSON& spec,
+    const char* description )
   {
-    if (!spec.has_key(name)) throw marley::Error(std::string("The")
+    if ( !spec.has_key(name) ) throw marley::Error( std::string("The")
       + " specification for a " + description + " source should include"
-      + " a " + name + " key.");
+      + " a " + name + " key." );
 
-    const marley::JSON& vec = spec.at(name);
+    const marley::JSON& vec = spec.at( name );
 
     if ( !vec.is_array() ) throw marley::Error( std::string("The")
       + " value given for the " + name + " key for a " + description
@@ -81,11 +82,11 @@ namespace {
     std::vector<double> result;
 
     auto elements = vec.array_range();
-    if (elements.begin() != elements.end()) {
+    if ( elements.begin() != elements.end() ) {
       bool ok;
-      for (const auto& el : elements) {
-        double dub = el.to_double(ok);
-        if (ok) result.push_back(dub);
+      for ( const auto& el : elements ) {
+        double dub = el.to_double( ok );
+        if ( ok ) result.push_back( dub );
         else throw marley::Error( "Invalid array entry '"
           + el.dump_string() + "' given for the " + name + " key for a "
           + description + " source specification." );
@@ -97,12 +98,12 @@ namespace {
 
 }
 
-marley::JSONConfig::JSONConfig(const marley::JSON& json) : json_(json)
+marley::JSONConfig::JSONConfig( const marley::JSON& json ) : json_( json )
 {
   update_logger_settings();
 }
 
-marley::JSONConfig::JSONConfig(const std::string& json_filename)
+marley::JSONConfig::JSONConfig( const std::string& json_filename )
 {
   // First update the Logger settings so we can have default logging
   // up and running when we parse the JSON configuration
@@ -115,25 +116,24 @@ marley::JSONConfig::JSONConfig(const std::string& json_filename)
   update_logger_settings();
 }
 
-int marley::JSONConfig::neutrino_pdg(const std::string& nu) const {
+int marley::JSONConfig::neutrino_pdg( const std::string& nu ) const {
 
   int pdg = 0;
 
   bool bad = false;
 
   // Matches integers
-  static const std::regex rx_int = std::regex("[-+]?[0-9]+");
-  if (std::regex_match(nu, rx_int)) {
-    pdg = std::stoi(nu);
-    if (!marley::NeutrinoSource::pdg_is_allowed(pdg)) bad = true;
+  static const std::regex rx_int = std::regex( "[-+]?[0-9]+" );
+  if ( std::regex_match(nu, rx_int) ) {
+    pdg = std::stoi( nu );
+    if ( !marley::NeutrinoSource::pdg_is_allowed(pdg) ) bad = true;
   }
-  else if (!marley_utils::string_to_neutrino_pdg(nu, pdg)) {
+  else if ( !marley_utils::string_to_neutrino_pdg(nu, pdg) ) {
     bad = true;
   }
 
-  if (bad) throw marley::Error(std::string("Invalid neutrino type")
-    + " specification '" + nu + "' given for the MARLEY"
-    + " neutrino source.");
+  if ( bad ) throw marley::Error( "Invalid neutrino type specification '"
+    + nu + "' given for the MARLEY neutrino source." );
 
   return pdg;
 }
@@ -141,16 +141,16 @@ int marley::JSONConfig::neutrino_pdg(const std::string& nu) const {
 marley::Generator marley::JSONConfig::create_generator() const
 {
   uint_fast64_t seed;
-  if (json_.has_key("seed")) {
+  if ( json_.has_key("seed") ) {
     bool ok;
-    seed = static_cast<uint_fast64_t>(json_.at("seed").to_long(ok));
-    if (!ok) handle_json_error("seed", json_.at("seed"));
+    seed = static_cast< uint_fast64_t >( json_.at("seed").to_long(ok) );
+    if ( !ok ) handle_json_error( "seed", json_.at("seed") );
   }
   else seed = std::chrono::system_clock::now().time_since_epoch().count();
 
   // Start with a default-constructed Generator seeded with either a
   // user-supplied seed or the current number of seconds since the Unix epoch.
-  marley::Generator gen(seed);
+  marley::Generator gen( seed );
 
   // Turn off calls to Generator::normalize_E_pdf() until we
   // have set up all the needed pieces
@@ -166,7 +166,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   // If the user has disabled nuclear de-excitations, then set the
   // flag appropriately.
   if ( json_.has_key("do_deexcitations") ) {
-    const auto& do_deex = json_.at("do_deexcitations");
+    const auto& do_deex = json_.at( "do_deexcitations" );
     if ( do_deex.is_bool() ) {
       bool deexcite_or_not = do_deex.to_bool();
       gen.set_do_deexcitations( deexcite_or_not );
@@ -180,7 +180,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   // This can be used to partially initialize the Generator in unusual
   // situations.
   if ( json_.has_key("reactions") ) {
-    const auto& reactions = json_.at("reactions");
+    const auto& reactions = json_.at( "reactions" );
     if ( reactions.is_null() ) {
       MARLEY_LOG_INFO() << "Null reactions array detected."
         << " Initialization of reactions will be skipped.";
@@ -195,7 +195,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   CMode coulomb_mode = CMode::FERMI_AND_MEMA; // Default method
   if ( json_.has_key("coulomb_mode") ) {
     const auto& cmode = json_.at( "coulomb_mode" );
-    if ( !cmode.is_string() ) throw marley::Error("Invalid Coulomb mode"
+    if ( !cmode.is_string() ) throw marley::Error( "Invalid Coulomb mode"
       " specification " + cmode.dump_string() );
     std::string my_mode = cmode.to_string();
     coulomb_mode = marley::NuclearReaction
@@ -234,9 +234,9 @@ marley::Generator marley::JSONConfig::create_generator() const
     if ( source_pdg == react->pdg_a() ) found_matching_pdg = true;
   }
   // If neutrinos from the source can never interact, then complain about it
-  if ( !found_matching_pdg ) throw marley::Error("The neutrino source"
+  if ( !found_matching_pdg ) throw marley::Error( "The neutrino source"
     " produces " + marley_utils::get_particle_symbol(source_pdg)
-    + ", which cannot participate in any of the configured reactions.");
+    + ", which cannot participate in any of the configured reactions." );
 
   // Before returning the newly-created Generator object, print logging
   // messages describing the reactions that are active.
@@ -262,8 +262,8 @@ marley::Generator marley::JSONConfig::create_generator() const
       {
         proc_type_str = "ES on " + ta.to_string();
       }
-      else throw marley::Error("Unrecognized process type encountered in"
-        " marley::JSONConfig::prepare_reactions()");
+      else throw marley::Error( "Unrecognized process type encountered in"
+        " marley::JSONConfig::prepare_reactions()" );
 
       // Show the threshold in red if it's above the maximum energy
       // produced by the source
@@ -350,13 +350,13 @@ void marley::JSONConfig::prepare_direction( marley::Generator& gen ) const {
   }
 }
 
-void marley::JSONConfig::prepare_reactions(marley::Generator& gen) const {
+void marley::JSONConfig::prepare_reactions( marley::Generator& gen ) const {
 
   const auto& fm = marley::FileManager::Instance();
 
   if ( json_.has_key("reactions") ) {
 
-    const marley::JSON& rs = json_.at("reactions");
+    const marley::JSON& rs = json_.at( "reactions" );
 
     // If the reactions key has a null value, skip trying
     // to load any reaction data. This can be used in unusual
@@ -372,23 +372,24 @@ void marley::JSONConfig::prepare_reactions(marley::Generator& gen) const {
         // Create a temporary vector to cache the (TargetAtom, ProcessType)
         // pairs for which reactions have already been loaded. Complain if
         // there is duplication.
-        std::vector< std::pair<marley::TargetAtom, ProcType> > loaded_proc_types;
+        std::vector< std::pair<marley::TargetAtom, ProcType> >
+          loaded_proc_types;
 
-        for (const auto& r : reactions) {
+        for ( const auto& r : reactions ) {
 
           std::string filename = r.to_string();
 
           // Find the reaction data file using the MARLEY search path
           std::string full_file_name = fm.find_file( filename );
           if ( full_file_name.empty() ) {
-            throw marley::Error("Could not locate the reaction data file "
+            throw marley::Error( "Could not locate the reaction data file "
               + filename + ". Please check that the file name is spelled"
               " correctly and that the file is in a folder"
-              " on the MARLEY search path.");
+              " on the MARLEY search path." );
           }
 
           auto reacts = marley::Reaction::load_from_file(
-            full_file_name, gen.get_structure_db());
+            full_file_name, gen.get_structure_db() );
 
           if ( reacts.empty() ) throw marley::Error( "Failed to load"
             " any reactions from the file " + full_file_name + ". Please"
@@ -400,7 +401,8 @@ void marley::JSONConfig::prepare_reactions(marley::Generator& gen) const {
           // information from the first one
           auto temp_atom = reacts.front()->atomic_target();
           auto temp_pt = reacts.front()->process_type();
-          std::pair<marley::TargetAtom, ProcType> temp_pair(temp_atom, temp_pt);
+          std::pair< marley::TargetAtom, ProcType >
+            temp_pair( temp_atom, temp_pt );
 
           // If we have a duplicate, warn the user that we'll ignore it
           auto begin = loaded_proc_types.cbegin();
@@ -416,7 +418,7 @@ void marley::JSONConfig::prepare_reactions(marley::Generator& gen) const {
           // Otherwise, save the process type for later checks of this kind
           else {
             MARLEY_LOG_INFO() << "Loaded "
-              << marley::Reaction::proc_type_to_string(temp_pt)
+              << marley::Reaction::proc_type_to_string( temp_pt )
               << " reaction data for " << temp_atom << " from "
               << full_file_name;
             loaded_proc_types.push_back( temp_pair );
@@ -429,19 +431,19 @@ void marley::JSONConfig::prepare_reactions(marley::Generator& gen) const {
         return;
       }
       else {
-        throw marley::Error("At least one reaction matrix data file must be"
-          " specified using the \"reactions\" parameter");
+        throw marley::Error( "At least one reaction matrix data file must be"
+          " specified using the \"reactions\" parameter" );
       }
     }
 
-    handle_json_error("reactions", rs);
+    handle_json_error( "reactions", rs );
   }
 
-  throw marley::Error("Missing \"reactions\" key in the MARLEY configuration"
-    " file.");
+  throw marley::Error( "Missing \"reactions\" key in the MARLEY configuration"
+    " file." );
 }
 
-void marley::JSONConfig::prepare_structure(marley::Generator& gen) const
+void marley::JSONConfig::prepare_structure( marley::Generator& gen ) const
 {
   // If the user specified a non-default value of either the
   // maximum orbital angular momentum or the maximum multipolarity
@@ -490,59 +492,59 @@ void marley::JSONConfig::prepare_structure(marley::Generator& gen) const
 
 //------------------------------------------------------------------------------
 InterpMethod marley::JSONConfig::get_interpolation_method(
-  const std::string& rule) const
+  const std::string& rule ) const
 {
   // Try using the ENDF-style numerical codes first
-  static const std::regex rx_nonneg_int("[0-9]+");
+  static const std::regex rx_nonneg_int( "[0-9]+" );
 
-  if (std::regex_match(rule, rx_nonneg_int)) {
-    int endf_interp_code = std::stoi(rule);
-    if (endf_interp_code == 1) return InterpMethod::Constant;
-    else if (endf_interp_code == 2) return InterpMethod::LinearLinear;
-    else if (endf_interp_code == 3) return InterpMethod::LinearLog;
-    else if (endf_interp_code == 4) return InterpMethod::LogLinear;
-    else if (endf_interp_code == 5) return InterpMethod::LogLog;
+  if ( std::regex_match(rule, rx_nonneg_int) ) {
+    int endf_interp_code = std::stoi( rule );
+    if ( endf_interp_code == 1 ) return InterpMethod::Constant;
+    else if ( endf_interp_code == 2 ) return InterpMethod::LinearLinear;
+    else if ( endf_interp_code == 3 ) return InterpMethod::LinearLog;
+    else if ( endf_interp_code == 4 ) return InterpMethod::LogLinear;
+    else if ( endf_interp_code == 5 ) return InterpMethod::LogLog;
   }
 
   // Interpolation rules may also be given as strings
-  else if (rule == "const" || rule == "constant")
+  else if ( rule == "const" || rule == "constant" )
     return InterpMethod::Constant;
-  else if (rule == "lin" || rule == "linlin")
+  else if ( rule == "lin" || rule == "linlin" )
     return InterpMethod::LinearLinear;
-  else if (rule == "log" || rule == "loglog")
+  else if ( rule == "log" || rule == "loglog" )
     return InterpMethod::LogLog;
   // linear in energy, logarithmic in probability density
-  else if (rule == "linlog")
+  else if ( rule == "linlog" )
     return InterpMethod::LinearLog;
   // logarithmic in energy, linear in probability density
-  else if (rule == "loglin")
+  else if ( rule == "loglin" )
     return InterpMethod::LogLinear;
-  else throw marley::Error(std::string("Invalid interpolation rule '")
-    + rule + "' given in the neutrino source specification");
+  else throw marley::Error( "Invalid interpolation rule '" + rule
+    + "' given in the neutrino source specification" );
 
   // We shouldn't ever end up here, but return something just in case
   return InterpMethod::Constant;
 }
 
 //------------------------------------------------------------------------------
-void marley::JSONConfig::prepare_neutrino_source(marley::Generator& gen) const
+void marley::JSONConfig::prepare_neutrino_source( marley::Generator& gen ) const
 {
   // Check whether the user provided their own estimate of the source PDF
   // maximum value. If they did, adopt that before building the source.
   // This is useful when automatic searches for the maximum don't work.
   // The user can put in a value manually to get rejection sampling to work.
-  if ( json_.has_key("energy_pdf_max" ) ) {
+  if ( json_.has_key("energy_pdf_max") ) {
     bool ok;
-    const marley::JSON& max_spec = json_.at("energy_pdf_max");
+    const marley::JSON& max_spec = json_.at( "energy_pdf_max" );
     double user_max = max_spec.to_double( ok );
-    if ( !ok ) handle_json_error("energy_pdf_max", max_spec);
+    if ( !ok ) handle_json_error( "energy_pdf_max", max_spec );
     else gen.set_default_E_pdf_max( user_max );
   }
 
   // Check whether the JSON configuration includes a neutrino source
   // specification
   if ( !json_.has_key("source") ) return;
-  const marley::JSON& source_spec = json_.at("source");
+  const marley::JSON& source_spec = json_.at( "source" );
 
   // If the neutrino source key has a null value, just return without doing
   // anything else
@@ -554,149 +556,152 @@ void marley::JSONConfig::prepare_neutrino_source(marley::Generator& gen) const
 
   // Complain if the user didn't specify a source type
   if ( !source_spec.has_key("type") ) {
-    throw marley::Error(std::string("Missing \"type\" key in")
-      + " neutrino source specification.");
+    throw marley::Error( "Missing \"type\" key in neutrino source"
+      " specification." );
     return;
   }
 
   // Get the neutrino source type
   bool ok;
-  std::string type = source_spec.at("type").to_string(ok);
-  if ( !ok ) handle_json_error("source.type", source_spec.at("type"));
+  std::string type = source_spec.at( "type" ).to_string( ok );
+  if ( !ok ) handle_json_error( "source.type", source_spec.at("type") );
 
   // Complain if the user didn't specify a neutrino type
-  if (!source_spec.has_key("neutrino")) {
-    throw marley::Error(std::string("Missing \"neutrino\" key in")
-      + " neutrino source specification.");
+  if ( !source_spec.has_key("neutrino") ) {
+    throw marley::Error( "Missing \"neutrino\" key in neutrino source"
+      " specification." );
     return;
   }
   // Get the neutrino type
-  std::string nu = source_spec.at("neutrino").to_string(ok);
-  if (!ok) handle_json_error("source.neutrino", source_spec.at("neutrino"));
+  std::string nu = source_spec.at( "neutrino" ).to_string( ok );
+  if ( !ok ) handle_json_error( "source.neutrino", source_spec.at("neutrino") );
 
   // Particle Data Group code for the neutrino type produced by this source
-  int pdg = neutrino_pdg(nu);
+  int pdg = neutrino_pdg( nu );
 
-  std::unique_ptr<marley::NeutrinoSource> source;
+  std::unique_ptr< marley::NeutrinoSource > source;
 
-  if (type == "mono" || type == "monoenergetic") {
-    double energy = source_get_double("energy", source_spec,
-      "monoenergetic");
-    source_check_positive(energy, "energy", "monoenergetic");
-    source = std::make_unique<marley::MonoNeutrinoSource>(pdg, energy);
+  if ( type == "mono" || type == "monoenergetic" ) {
+    double energy = source_get_double( "energy", source_spec, "monoenergetic" );
+    source_check_positive( energy, "energy", "monoenergetic" );
+    source = std::make_unique< marley::MonoNeutrinoSource >( pdg, energy );
     MARLEY_LOG_INFO() << "Created monoenergetic "
-      << marley_utils::get_particle_symbol(pdg) << " source with"
+      << marley_utils::get_particle_symbol( pdg ) << " source with"
       << " neutrino energy = " << energy << " MeV";
   }
-  else if (type == "dar" || type == "decay-at-rest") {
-    source = std::make_unique<marley::DecayAtRestNeutrinoSource>(pdg);
+  else if ( type == "dar" || type == "decay-at-rest" ) {
+    source = std::make_unique< marley::DecayAtRestNeutrinoSource >( pdg );
      MARLEY_LOG_INFO() << "Created muon decay-at-rest "
-       << marley_utils::get_particle_symbol(pdg) << " source";
+       << marley_utils::get_particle_symbol( pdg ) << " source";
   }
-  else if (type == "fd" || type == "fermi-dirac" || type == "fermi_dirac") {
-    double Emin = source_get_double("Emin", source_spec, "Fermi-Dirac");
-    double Emax = source_get_double("Emax", source_spec, "Fermi-Dirac");
-    double temp = source_get_double("temperature", source_spec,
-      "Fermi-Dirac");
+  else if ( type == "fd" || type == "fermi-dirac" || type == "fermi_dirac" ) {
+    double Emin = source_get_double( "Emin", source_spec, "Fermi-Dirac" );
+    double Emax = source_get_double( "Emax", source_spec, "Fermi-Dirac" );
+    double temp = source_get_double( "temperature", source_spec,
+      "Fermi-Dirac" );
 
     double eta = 0.;
-    if (source_spec.has_key("eta")) eta = source_get_double("eta", source_spec,
-      "Fermi-Dirac");
+    if ( source_spec.has_key("eta") ) {
+      eta = source_get_double( "eta", source_spec, "Fermi-Dirac" );
+    }
 
-    source_check_nonnegative(Emin, "Emin", "Fermi-Dirac");
-    source_check_positive(temp, "temperature", "Fermi-Dirac");
+    source_check_nonnegative( Emin, "Emin", "Fermi-Dirac" );
+    source_check_positive( temp, "temperature", "Fermi-Dirac" );
 
-    if (Emax <= Emin) throw marley::Error(std::string("Emax <= Emin")
-      + " for a Fermi-Dirac neutrino source");
+    if ( Emax <= Emin ) throw marley::Error( "Emax <= Emin for a Fermi-Dirac"
+      " neutrino source" );
 
-    source = std::make_unique<marley::FermiDiracNeutrinoSource>(pdg, Emin,
-      Emax, temp, eta);
+    source = std::make_unique< marley::FermiDiracNeutrinoSource >( pdg, Emin,
+      Emax, temp, eta );
     MARLEY_LOG_INFO() << "Created Fermi-Dirac "
-      << marley_utils::get_particle_symbol(pdg) << " source with parameters";
+      << marley_utils::get_particle_symbol( pdg ) << " source with parameters";
     MARLEY_LOG_INFO() << "  Emin = " << Emin << " MeV";
     MARLEY_LOG_INFO() << "  Emax = " << Emax << " MeV";
     MARLEY_LOG_INFO() << "  temperature = " << temp << " MeV";
     MARLEY_LOG_INFO() << "  eta = " << eta;
   }
-  else if (type == "bf" || type == "beta" || type == "beta-fit") {
-    double Emin = source_get_double("Emin", source_spec, "beta-fit");
-    double Emax = source_get_double("Emax", source_spec, "beta-fit");
-    double Emean = source_get_double("Emean", source_spec, "beta-fit");
+  else if ( type == "bf" || type == "beta" || type == "beta-fit" ) {
+    double Emin = source_get_double( "Emin", source_spec, "beta-fit" );
+    double Emax = source_get_double( "Emax", source_spec, "beta-fit" );
+    double Emean = source_get_double( "Emean", source_spec, "beta-fit" );
 
     double beta = 4.5;
-    if (source_spec.has_key("beta")) beta = source_get_double("beta", source_spec,
-      "beta-fit");
+    if ( source_spec.has_key("beta") ) {
+      beta = source_get_double( "beta", source_spec, "beta-fit" );
+    }
 
-    source_check_nonnegative(Emin, "Emin", "beta-fit");
-    source_check_positive(Emean, "Emean", "beta-fit");
+    source_check_nonnegative( Emin, "Emin", "beta-fit" );
+    source_check_positive( Emean, "Emean", "beta-fit" );
 
-    if (Emax <= Emin) throw marley::Error(std::string("Emax <= Emin")
-      + " for a beta-fit neutrino source");
+    if ( Emax <= Emin ) throw marley::Error( "Emax <= Emin for a beta-fit"
+      " neutrino source" );
 
-    source = std::make_unique<marley::BetaFitNeutrinoSource>(pdg, Emin,
-      Emax, Emean, beta);
+    source = std::make_unique< marley::BetaFitNeutrinoSource >( pdg, Emin,
+      Emax, Emean, beta );
     MARLEY_LOG_INFO() << "Created beta-fit "
-      << marley_utils::get_particle_symbol(pdg) << " source with parameters";
+      << marley_utils::get_particle_symbol( pdg ) << " source with parameters";
     MARLEY_LOG_INFO() << "  Emin = " << Emin << " MeV";
     MARLEY_LOG_INFO() << "  Emax = " << Emax << " MeV";
     MARLEY_LOG_INFO() << "  average energy = " << Emean << " MeV";
     MARLEY_LOG_INFO() << "  beta = " << beta;
   }
-  else if (type == "hist" || type == "histogram") {
+  else if ( type == "hist" || type == "histogram" ) {
 
-    std::vector<double> Es = get_vector("E_bin_lefts", source_spec,
-      "histogram");
-    std::vector<double> weights = get_vector("weights", source_spec,
-      "histogram");
+    std::vector< double > Es = get_vector( "E_bin_lefts", source_spec,
+      "histogram" );
+    std::vector< double > weights = get_vector( "weights", source_spec,
+      "histogram" );
 
-    if (Es.size() != weights.size()) throw marley::Error(std::string("The")
-      + " sizes of the arrays of energy bin left edges and weights given"
-      + " for a histogram neutrino source are unequal.");
+    if ( Es.size() != weights.size() ) throw marley::Error( "The sizes of the"
+      " arrays of energy bin left edges and weights given for a histogram"
+      " neutrino source are unequal." );
 
-    double Emax = source_get_double("Emax", source_spec, "histogram");
-    source_check_positive(Emax, "Emax", "histogram");
+    double Emax = source_get_double( "Emax", source_spec, "histogram" );
+    source_check_positive( Emax, "Emax", "histogram" );
 
     // Add Emax to the grid
-    Es.push_back(Emax);
+    Es.push_back( Emax );
 
     // Set the probability density at E = Emax to be zero (this ensures
     // that no energies outside of the histogram will be sampled)
-    weights.push_back(0.);
+    weights.push_back( 0. );
 
     // Convert from bin weights to probability densities by dividing by the
     // width of each bin
     int jmax = Es.size() - 1;
-    for (int j = 0; j < jmax; ++j) {
+    for ( int j = 0; j < jmax; ++j ) {
 
-      double width = Es.at(j + 1) - Es.at(j);
-      if (width <= 0) throw marley::Error(std::string("Invalid bin width")
+      double width = Es.at( j + 1 ) - Es.at( j );
+      if ( width <= 0 ) throw marley::Error( "Invalid bin width"
         + std::to_string(width) + " encountered when creating a histogram"
-        + " neutrino source");
+        " neutrino source" );
 
-      weights.at(j) /= width;
+      weights.at( j ) /= width;
     }
 
     // Create the source
-    source = std::make_unique<marley::GridNeutrinoSource>(Es, weights, pdg,
-      InterpMethod::Constant);
+    source = std::make_unique< marley::GridNeutrinoSource >( Es, weights, pdg,
+      InterpMethod::Constant );
     MARLEY_LOG_INFO() << "Created histogram "
-      << marley_utils::get_particle_symbol(pdg) << " source";
+      << marley_utils::get_particle_symbol( pdg ) << " source";
   }
-  else if (type == "grid") {
-    std::vector<double> energies = get_vector("energies", source_spec, "grid");
-    std::vector<double> PDs = get_vector("prob_densities", source_spec, "grid");
-    std::string rule = source_get("rule", source_spec, "grid", "linlin");
+  else if ( type == "grid" ) {
+    std::vector< double > energies = get_vector( "energies", source_spec,
+      "grid" );
+    std::vector< double > PDs = get_vector( "prob_densities", source_spec,
+      "grid" );
+    std::string rule = source_get( "rule", source_spec, "grid", "linlin" );
 
-    InterpMethod method = get_interpolation_method(rule);
+    InterpMethod method = get_interpolation_method( rule );
 
-    source = std::make_unique<marley::GridNeutrinoSource>(energies, PDs, pdg,
-      method);
+    source = std::make_unique< marley::GridNeutrinoSource >( energies, PDs,
+      pdg, method );
     MARLEY_LOG_INFO() << "Created grid "
-      << marley_utils::get_particle_symbol(pdg) << " source";
+      << marley_utils::get_particle_symbol( pdg ) << " source";
   }
-  else if (!process_extra_source_types(type, source_spec, pdg, source)) {
-    throw marley::Error(std::string("Unrecognized MARLEY neutrino source")
-      + " type '" + type + "'");
+  else if ( !process_extra_source_types(type, source_spec, pdg, source) ) {
+    throw marley::Error( "Unrecognized MARLEY neutrino source type '"
+      + type + "'" );
   }
 
   // If the user has specified whether to weight the incident neutrino spectrum
@@ -704,10 +709,10 @@ void marley::JSONConfig::prepare_neutrino_source(marley::Generator& gen) const
   // new Generator object accordingly
   if ( source_spec.has_key("weight_flux") ) {
     bool ok = false;
-    bool should_we_weight = source_spec.at("weight_flux").to_bool(ok);
-    if (!ok) handle_json_error("source.weight_flux",
-      source_spec.at("weight_flux"));
-    gen.set_weight_flux(should_we_weight);
+    bool should_we_weight = source_spec.at( "weight_flux" ).to_bool( ok );
+    if ( !ok ) handle_json_error( "source.weight_flux",
+      source_spec.at("weight_flux") );
+    gen.set_weight_flux( should_we_weight );
   }
 
   // Load the generator with the new source object
@@ -719,8 +724,8 @@ void marley::JSONConfig::prepare_target( marley::Generator& gen ) const {
 
   // Temporary storage for the list of target atoms and their atom fractions
   // in the possibly-composite neutrino target
-  std::vector<marley::TargetAtom> atoms;
-  std::vector<double> atom_fractions;
+  std::vector< marley::TargetAtom > atoms;
+  std::vector< double > atom_fractions;
 
   // In the absence of a user-specified target, create one automatically from
   // the configured reactions. Each unique target atom involved in at least
@@ -826,15 +831,15 @@ std::string marley::JSONConfig::source_get(const char* name,
   const marley::JSON& source_spec, const char* description,
   const char* default_str) const
 {
-  if (!source_spec.has_key(name)) {
-    if (default_str) return default_str;
-    else throw marley::Error(std::string("Missing source.") + name
-      + " key for " + description + " source");
+  if ( !source_spec.has_key(name) ) {
+    if ( default_str ) return default_str;
+    else throw marley::Error( std::string("Missing source.") + name
+      + " key for " + description + " source" );
   }
   bool ok;
-  std::string result = source_spec.at(name).to_string(ok);
-  if (!ok) throw marley::Error(std::string("Invalid value given for source.")
-    + name + " key for " + description + " source");
+  std::string result = source_spec.at( name ).to_string( ok );
+  if ( !ok ) throw marley::Error( std::string("Invalid value given for source.")
+    + name + " key for " + description + " source" );
   return result;
 }
 
@@ -845,94 +850,95 @@ void marley::JSONConfig::update_logger_settings() const {
 
   logger.clear_streams();
 
-  if (!json_.has_key("log")) {
+  if ( !json_.has_key("log") ) {
     // If the user hasn't specified a logger configuration, use the default,
     // which is logging at the INFO level to stdout.
-    logger.add_stream(std::cout, LogLevel::INFO);
+    logger.add_stream( std::cout, LogLevel::INFO );
     logger.enable();
     return;
   }
   else {
-    const marley::JSON& log_config = json_.at("log");
+    const marley::JSON& log_config = json_.at( "log" );
 
     if ( !log_config.is_array() ) {
-      throw marley::Error(std::string("The configuration given")
-        + " for the \"log\" key should be an array of JSON objects.");
+      throw marley::Error( "The configuration given for the \"log\" key"
+        " should be an array of JSON objects." );
     }
 
     auto elements = log_config.array_range();
     bool ok;
     // If the user has specified an empty list of logger files, then
     // disable the Logger and return immediately.
-    if (elements.begin() == elements.end()) {
+    if ( elements.begin() == elements.end() ) {
       logger.disable();
       return;
     }
     else logger.enable();
 
     // Loop over the list of log files and add them one-by-one to the Logger.
-    for (const auto& el : elements) {
+    for ( const auto& el : elements ) {
       // Get the file name for the new log file
-      if (!el.has_key("file")) throw marley::Error(std::string("Missing")
-        + " file name in a log file specification");
-      std::string file_name = el.at("file").to_string(ok);
-      if (!ok) throw marley::Error("Invalid log file name \""
-        + file_name + '\"');
+      if ( !el.has_key("file") ) throw marley::Error( "Missing file name in"
+        " a log file specification" );
+      std::string file_name = el.at( "file" ).to_string( ok );
+      if ( !ok ) throw marley::Error( "Invalid log file name \""
+        + file_name + '\"' );
 
       // Use "info" as the default logging level
       LogLevel level = LogLevel::INFO;
       // Set the logging level for the current file to a non-default value
       // if the user has specified one. Complain if you get confused.
-      if (el.has_key("level")) {
-        std::string level_str = el.at("level").to_string();
-        if (level_str == "error") level = LogLevel::ERROR;
-        else if (level_str == "warning") level = LogLevel::WARNING;
-        else if (level_str == "info") level = LogLevel::INFO;
-        else if (level_str == "debug") level = LogLevel::DEBUG;
-        else if (level_str == "disabled") level = LogLevel::DISABLED;
-        else throw marley::Error("Invalid logging level \""
-          + el.dump_string() + '\"');
+      if ( el.has_key("level") ) {
+        std::string level_str = el.at( "level" ).to_string();
+        if ( level_str == "error" ) level = LogLevel::ERROR;
+        else if ( level_str == "warning" ) level = LogLevel::WARNING;
+        else if ( level_str == "info" ) level = LogLevel::INFO;
+        else if ( level_str == "debug" ) level = LogLevel::DEBUG;
+        else if ( level_str == "disabled" ) level = LogLevel::DISABLED;
+        else throw marley::Error( "Invalid logging level \""
+          + el.dump_string() + '\"' );
       }
 
       // If the file name is "stdout", then add std::cout as a logging
       // stream. Do the same sort of thing for std::cerr. Otherwise, open the
       // requested file and add it to the logger streams.
-      if (file_name == "stdout")
-        logger.add_stream(std::cout, level);
-      else if (file_name == "stderr")
-        logger.add_stream(std::cerr, level);
+      if ( file_name == "stdout" )
+        logger.add_stream( std::cout, level );
+      else if ( file_name == "stderr" )
+        logger.add_stream( std::cerr, level );
       else {
         // If the user specified a value for the "overwrite" key, use it
         // to determine whether we should append to the file (false) or
         // overwrite it (true). Otherwise, assume we want to append to it.
         auto file_mode = std::ios::out;
-        if (el.has_key("overwrite")) {
+        if ( el.has_key("overwrite") ) {
 
-          marley::JSON ow = el.at("overwrite");
+          marley::JSON ow = el.at( "overwrite" );
 
-          bool overwrite = ow.to_bool(ok);
-          if (!ok) throw marley::Error("Invalid log file overwrite setting \""
-            + ow.dump_string() + '\"');
+          bool overwrite = ow.to_bool( ok );
+          if ( !ok ) throw marley::Error( "Invalid log file overwrite"
+            " setting \"" + ow.dump_string() + '\"' );
 
-          if (overwrite) file_mode |= std::ios::trunc;
+          if ( overwrite ) file_mode |= std::ios::trunc;
           else file_mode |= std::ios::app;
         }
         else file_mode |= std::ios::app;
 
-        auto outfile = std::make_shared<std::ofstream>(file_name, file_mode);
-        if (!outfile || (!outfile->good())) throw marley::Error("Unable"
-          " to open the log file \"" + file_name + "\"");
-        else logger.add_stream(outfile, level);
+        auto outfile = std::make_shared< std::ofstream >( file_name,
+          file_mode );
+        if ( !outfile || (!outfile->good()) ) throw marley::Error( "Unable"
+          " to open the log file \"" + file_name + "\"" );
+        else logger.add_stream( outfile, level );
       }
     }
   }
 }
 
-void marley::JSONConfig::handle_json_error(const std::string& name,
-  const marley::JSON& json)
+void marley::JSONConfig::handle_json_error( const std::string& name,
+  const marley::JSON& json )
 {
   std::ostringstream message;
   message << "The JSON parameter \"" << name << "\" was set to the"
     << " invalid value " << json;
-  throw marley::Error(message.str());
+  throw marley::Error( message.str() );
 }

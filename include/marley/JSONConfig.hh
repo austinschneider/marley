@@ -33,8 +33,8 @@ namespace marley {
       using InterpMethod = marley::InterpolationGrid<double>
         ::InterpolationMethod;
 
-      explicit JSONConfig(const marley::JSON& object);
-      explicit JSONConfig(const std::string& json_filename);
+      explicit JSONConfig( const marley::JSON& object );
+      explicit JSONConfig( const std::string& json_filename );
 
       marley::Generator create_generator() const;
 
@@ -46,8 +46,8 @@ namespace marley {
 
       void update_logger_settings() const;
 
-      InterpMethod get_interpolation_method(const std::string& rule) const;
-      int neutrino_pdg(const std::string& nu) const;
+      InterpMethod get_interpolation_method( const std::string& rule ) const;
+      int neutrino_pdg( const std::string& nu ) const;
 
       inline virtual bool process_extra_source_types(
         const std::string& /*type*/, const marley::JSON& /*source_spec*/,
@@ -55,17 +55,18 @@ namespace marley {
         const;
 
       inline const marley::JSON& get_json() const;
-      inline void set_json(const marley::JSON& json);
+      inline void set_json( const marley::JSON& json );
 
-      static void handle_json_error(const std::string& name,
-        const marley::JSON& json);
+      static void handle_json_error( const std::string& name,
+        const marley::JSON& json );
 
     protected:
 
       /// @brief Helper function for loading strings from the JSON
       /// configuration
-      std::string source_get(const char* name, const marley::JSON& source_spec,
-        const char* description, const char* default_str) const;
+      std::string source_get( const char* name,
+        const marley::JSON& source_spec, const char* description,
+        const char* default_str ) const;
 
       /// @brief JSON object describing this configuration
       marley::JSON json_;
@@ -74,12 +75,12 @@ namespace marley {
   inline const marley::JSON& marley::JSONConfig::get_json() const
     { return json_; }
 
-  inline void marley::JSONConfig::set_json(const marley::JSON& json)
+  inline void marley::JSONConfig::set_json( const marley::JSON& json )
     { json_ = json; }
 
   inline bool marley::JSONConfig::process_extra_source_types(
     const std::string& /*type*/, const marley::JSON& /*source_spec*/,
-    int /*pdg_code*/, std::unique_ptr<marley::NeutrinoSource>& /*source*/)
+    int /*pdg_code*/, std::unique_ptr< marley::NeutrinoSource >& /*source*/)
     const
   { return false; }
 
