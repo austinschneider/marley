@@ -15,6 +15,7 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
+#include <iostream>
 #include <complex>
 
 namespace marley {
@@ -89,6 +90,9 @@ namespace marley {
       /// @brief Get the mass number
       inline int A() const;
 
+      /// @brief Print information about the optical model parameters
+      virtual void print( std::ostream& out ) const = 0;
+
     protected:
 
       // Nuclear atomic and mass numbers
@@ -99,4 +103,11 @@ namespace marley {
   inline int OpticalModel::Z() const { return Z_; }
 
   inline int OpticalModel::A() const { return A_; }
+}
+
+inline std::ostream& operator<<( std::ostream& out,
+  const marley::OpticalModel& om )
+{
+  om.print( out );
+  return out;
 }

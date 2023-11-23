@@ -57,6 +57,8 @@ namespace marley {
         int fragment_pdg, int two_s, size_t l_max, int target_charge = 0 )
         override;
 
+      virtual void print( std::ostream& out ) const override;
+
     private:
 
       /// Total CM frame kinetic energy of both particles

@@ -529,3 +529,74 @@ void marley::KoningDelarocheOpticalModel::update_target_mass(
   target_mass_ = mt.get_atomic_mass( Z_, A_ )
    - target_charge*mt.get_particle_mass( marley_utils::ELECTRON );
 }
+
+void marley::KoningDelarocheOpticalModel::print( std::ostream& out ) const
+{
+  out << "----------------------------------------------------------\n";
+  out << "KD optical model for Z = " << Z_ << ", A = " << A_ << '\n';
+  out << "----------------------------------------------------------\n";
+  out << "Neutron parameters:\n\n";
+
+  out << "  v1n = " << v1n << " MeV\n";
+  out << "  v2n = " << v2n << " MeV^{-1}\n";
+  out << "  v3n = " << v3n << " MeV^{-2}\n";
+  out << "  v4n = " << v4n << " MeV^{-3}\n\n";
+
+  out << "  w1n = " << w1n << " MeV\n";
+  out << "  w2n = " << w2n << " MeV\n\n";
+
+  out << "  d1n = " << d1n << " MeV\n";
+  out << "  d2n = " << d2n << " MeV^{-1}\n";
+  out << "  d3n = " << d3n << " MeV\n\n";
+
+  out << "  vso1n = " << vso1n << " MeV\n";
+  out << "  vso2n = " << vso2n << " MeV^{-1}\n\n";
+
+  out << "  wso1n = " << wso1n << " MeV\n";
+  out << "  wso2n = " << wso2n << " MeV\n\n";
+
+  out << "  Efn = " << Efn << " MeV\n\n";
+
+  out << "  Rvn = " << Rvn << " fm\n";
+  out << "  avn = " << avn << " fm\n";
+  out << "  Rdn = " << Rdn << " fm\n";
+  out << "  adn = " << adn << " fm\n";
+  out << "  Rso_n = " << Rso_n << " fm\n";
+  out << "  aso_n = " << aso_n << " fm\n";
+
+  out << "----------------------------------------------------------\n";
+  out << "Proton parameters:\n\n";
+
+  out << "  v1p = " << v1p << " MeV\n";
+  out << "  v2p = " << v2p << " MeV^{-1}\n";
+  out << "  v3p = " << v3p << " MeV^{-2}\n";
+  out << "  v4p = " << v4p << " MeV^{-3}\n\n";
+
+  out << "  w1p = " << w1p << " MeV\n";
+  out << "  w2p = " << w2p << " MeV\n\n";
+
+  out << "  d1p = " << d1p << " MeV\n";
+  out << "  d2p = " << d2p << " MeV^{-1}\n";
+  out << "  d3p = " << d3p << " MeV\n\n";
+
+  out << "  vso1p = " << vso1p << " MeV\n";
+  out << "  vso2p = " << vso2p << " MeV^{-1}\n\n";
+
+  out << "  wso1p = " << wso1p << " MeV\n";
+  out << "  wso2p = " << wso2p << " MeV\n\n";
+
+  out << "  Efp = " << Efp << " MeV\n\n";
+
+  out << "  Rvp = " << Rvp << " fm\n";
+  out << "  avp = " << avp << " fm\n";
+  out << "  Rdp = " << Rdp << " fm\n";
+  out << "  adp = " << adp << " fm\n";
+  out << "  Rso_p = " << Rso_p << " fm\n";
+  out << "  aso_p = " << aso_p << " fm\n\n";
+
+  out << "  Rc = " << Rc << " fm\n";
+  out << "  Vcbar_p = " << Vcbar_p << " MeV\n";
+  out << "----------------------------------------------------------\n";
+  out << "  Step size = " << step_size_ << " fm\n";
+  out << "----------------------------------------------------------\n";
+}
