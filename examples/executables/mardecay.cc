@@ -1,5 +1,5 @@
 /// @file
-/// @copyright Copyright (C) 2016-2020 Steven Gardiner
+/// @copyright Copyright (C) 2016-2023 Steven Gardiner
 /// @license GNU General Public License, version 3
 //
 // This file is part of MARLEY (Model of Argon Reaction Low Energy Yields)
@@ -18,17 +18,18 @@
 #include <array>
 #include <iostream>
 
-#ifdef USE_ROOT
-  // ROOT includes
-  #include "TFile.h"
-  #include "TParameter.h"
-  #include "TTree.h"
-#endif
+// HepMC3 includes
+#include "HepMC3/Attribute.h"
+#include "HepMC3/GenEvent.h"
+#include "HepMC3/GenVertex.h"
+#include "HepMC3/GenParticle.h"
 
 // MARLEY includes
+#include "marley/hepmc3_utils.hh"
 #include "marley/Generator.hh"
 #include "marley/JSON.hh"
 #include "marley/NucleusDecayer.hh"
+#include "marley/OutputFile.hh"
 #include "marley/Parity.hh"
 #include "marley/Reaction.hh"
 
@@ -43,92 +44,70 @@ using ProcType = marley::Reaction::ProcessType;
 // Assume that the target is an atom and thus has zero net charge
 constexpr int TARGET_NET_CHARGE = 0;
 
-// TODO: Refactor the marley::JSONConfig class to use something like
-// these templates
-
-// Extract a parameter of an arbitrary type from a JSON object with
-// error handling
-template <typename T> T get_param_from_object(const marley::JSON& obj,
-  const std::string& obj_key, const std::string& param_key)
-{
-  if ( !obj.has_key(param_key) ) {
-    std::string msg( "Missing \"" );
-    msg += param_key + "\" key in the";
-    if ( obj_key.empty() ) msg += " JSON configuration file";
-    else msg += " \"" + obj_key + "\" object";
-
-    throw marley::Error( msg );
-  }
-
-  bool ok = false;
-  const marley::JSON& param = obj.at( param_key );
-
-  // Helper variables
-  [[maybe_unused]] T result;
-  [[maybe_unused]] int proc_int;
-  [[maybe_unused]] std::string parity_str;
-
-  // TODO: "if constexpr" is a C++17 feature. Keep this in mind if you
-  // want to use these tricks in the main MARLEY code base.
-  // Based on https://tinyurl.com/type-traits
-  if constexpr ( std::is_floating_point<T>::value ) {
-    result = param.to_double( ok );
-  }
-  else if constexpr ( std::is_integral<T>::value ) {
-    result = param.to_long( ok );
-  }
-  else if constexpr ( std::is_same<T, ProcType>::value ) {
-    proc_int = param.to_long( ok );
-  }
-  else if constexpr ( std::is_same<T, std::string>::value )
-  {
-    result = param.to_string( ok );
-  }
-  else if constexpr ( std::is_same<T, marley::Parity>::value )
-  {
-    parity_str = param.to_string( ok );
-  }
-  else if constexpr ( std::is_same<T, bool>::value ) {
-    result = param.to_bool( ok );
-  }
-  else if constexpr ( std::is_same<T, marley::JSON>::value ) {
-    return param;
-  }
-
-  // No else statement with a static_assert needed here. See discussion
-  // at https://stackoverflow.com/q/38304847
-
-  if ( !ok ) {
-    std::string combined_label = obj_key + '/' + param_key;
-    marley::JSONConfig::handle_json_error( combined_label, param );
-  }
-
-  if constexpr ( std::is_same<T, ProcType>::value ) {
-    result = static_cast<ProcType>( proc_int );
-  }
-  else if constexpr ( std::is_same<T, marley::Parity>::value ) {
-    std::stringstream temp_ss;
-    temp_ss >> result;
-  }
-
-  return result;
-}
-
-// Similar to get_param_from_object_def, but return a default value if
-// the requested parameter key is not present in the JSON object
-template <typename T> T get_param_from_object_def(const marley::JSON& obj,
-  const std::string& obj_key, const std::string& param_key,
-  const T& default_value)
-{
-  if ( !obj.has_key(param_key) ) return default_value;
-  return get_param_from_object<T>( obj, obj_key, param_key );
-}
-
 // List of nuclear processes to consider. Other processes will not be
 // considered by this program.
-constexpr std::array< ProcType, 3 > nuclear_proc_types = { ProcType::NeutrinoCC,
-  ProcType::AntiNeutrinoCC, ProcType::NC };
+constexpr std::array< ProcType, 3 > nuclear_proc_types
+  = { ProcType::NeutrinoCC, ProcType::AntiNeutrinoCC, ProcType::NC };
 
+// Helper function that creates an event object containing the nucleus to be
+// de-excited
+std::shared_ptr< HepMC3::GenEvent > make_event_object(
+  int pdg_a, int pdg_b, int pdg_c, ProcType process_type, double Ex,
+  int twoJ, const marley::Parity& P,
+  std::shared_ptr< HepMC3::GenParticle >& residue, int residue_net_charge )
+{
+  // NuHepMC E.R.4
+  auto event = std::make_shared< HepMC3::GenEvent >( HepMC3::Units::MEV,
+    HepMC3::Units::CM );
+
+  // NuHepMC E.R.3
+  int signal_process_id = marley_hepmc3::get_nuhepmc_proc_id( process_type );
+  event->add_attribute( "signal_process_id",
+    std::make_shared< HepMC3::IntAttribute >( signal_process_id )
+  );
+
+  // Create the primary vertex
+  // NuHepMC E.R.6
+  auto prim_vtx = std::make_shared< HepMC3::GenVertex >();
+  prim_vtx->set_status( marley_hepmc3::NUHEPMC_PRIMARY_VERTEX );
+
+  event->add_vertex( prim_vtx );
+
+  // Create dummy particle objects for the projectile, target, and ejectile
+  auto projectile = marley_hepmc3::make_particle( pdg_a, 0., 0., 0., 0.,
+    marley_hepmc3::NUHEPMC_PROJECTILE_STATUS, 0. );
+
+  auto target = marley_hepmc3::make_particle( pdg_b,
+    marley_hepmc3::NUHEPMC_TARGET_STATUS, 0. );
+
+  // Create particle objects representing the ejectile and residue in the CM
+  // frame.
+  auto ejectile = marley_hepmc3::make_particle( pdg_c, 0., 0.,
+    0., 0., marley_hepmc3::NUHEPMC_FINAL_STATE_STATUS, 0. );
+
+  // Attach the particles to the primary vertex
+  prim_vtx->add_particle_in( projectile );
+  prim_vtx->add_particle_in( target );
+
+  prim_vtx->add_particle_out( ejectile );
+  prim_vtx->add_particle_out( residue );
+
+  // Add attributes needed to keep track of the nuclear de-excitation state
+  residue->add_attribute( "Ex",
+    std::make_shared< HepMC3::DoubleAttribute >(Ex) );
+  residue->add_attribute( "twoJ",
+    std::make_shared< HepMC3::IntAttribute >(twoJ) );
+  residue->add_attribute( "parity",
+    std::make_shared< HepMC3::IntAttribute >(static_cast<int>( P )) );
+
+  // Assume that the target has net charge TARGET_NET_CHARGE
+  marley_hepmc3::set_particle_charge( *target, TARGET_NET_CHARGE );
+
+  // Assign the correct charge to the residue
+  marley_hepmc3::set_particle_charge( *residue, residue_net_charge );
+
+  return event;
+}
 
 int main( int argc, char* argv[] ) {
 
@@ -152,39 +131,38 @@ int main( int argc, char* argv[] ) {
   marley::Generator gen = jc.create_generator();
 
   // Parse the extra "decay sim" configuration parameters
-  // TODO: This is hacky. You can make this better by refactoring some
-  // other parts of the code that read similar configurations (e.g., the
-  // output specification in the "executable_settings" object used by
-  // the main MARLEY executable). Lots of repetition here too.
   const marley::JSON& json = jc.get_json();
+
+  // Flag to check that JSON parsing went all right
+  bool ok;
 
   // Check that there is an object with the right label in the configuration
   // file
   const std::string decay_config_label( "decays" );
 
-  const auto& decays = get_param_from_object<marley::JSON>(
-    json, "", decay_config_label );
+  marley::JSON decays;
+  ok = get_from_json< marley::JSON >( "decay", json, decays );
+  if ( !ok ) throw marley::Error( "Missing key 'decays' in job configuration"
+    " file" );
 
-  // Get the total number of events to be simulated
-  long num_events = get_param_from_object<long>( decays, decay_config_label,
-    "events" );
+  // Get the total number of events to be simulated (default to 1e3 events)
+  long num_events = assign_from_json< long >( "events", decays, ok, 1000 );
 
   // Get the projectile PDG code. If it is missing, assume it's an electron
   // neutrino.
-  int projectile_pdg = get_param_from_object_def<int>( decays, decay_config_label,
-    "projectile", marley_utils::ELECTRON_NEUTRINO );
+  int projectile_pdg = assign_from_json< int >( "projectile", decays,
+    ok, marley_utils::ELECTRON_NEUTRINO );
 
   // Get the target proton and nucleon numbers
-  int Zi = get_param_from_object<int>( decays, decay_config_label,
-    "target_Z" );
-
-  int Ai = get_param_from_object<int>( decays, decay_config_label,
-    "target_A" );
+  int Zi = assign_from_json< int >( "target_Z", decays, ok );
+  int Ai = assign_from_json< int >( "target_A", decays, ok );
 
   // Get the process type for the primary 2 --> 2 reaction to assume.
   // If it is absent, assume a NC process.
-  auto proc_type = get_param_from_object<ProcType>( decays, decay_config_label,
-    "proc_type" );
+  auto proc_type = static_cast< ProcType >(
+    assign_from_json< int >( "proc_type", decays, ok,
+      static_cast<int>(ProcType::NC) )
+  );
 
   auto iter = std::find( nuclear_proc_types.cbegin(),
     nuclear_proc_types.cend(), proc_type );
@@ -197,24 +175,27 @@ int main( int argc, char* argv[] ) {
   }
 
   // Get the initial excitation energy
-  double Ex = get_param_from_object<double>( decays, decay_config_label, "Ex" );
+  double Ex = assign_from_json< double >( "Ex", decays, ok, -1.0 );
   if ( Ex < 0. ) {
     throw marley::Error( "Negative excitation energy encountered" );
   }
 
   // Get two times the initial nuclear spin
-  int twoJ = get_param_from_object<int>( decays, decay_config_label, "twoJ" );
+  int twoJ = assign_from_json< int >( "twoJ", decays, ok, -2 );
   if ( twoJ < 0 ) {
     throw marley::Error( "Negative nuclear spin value encountered" );
   }
 
   // Get the initial nuclear parity
-  auto parity = get_param_from_object<marley::Parity>( decays,
-    decay_config_label, "parity" );
+  auto parity_str = assign_from_json< std::string >( "parity", decays,
+    ok, "+" );
+  marley::Parity parity;
+  std::istringstream temp_iss( parity_str );
+  temp_iss >> parity;
 
   // Get the name to use for the output file
-  auto output_file_name = get_param_from_object<std::string>( decays,
-    decay_config_label, "output_file_name" );
+  auto output_file_name = assign_from_json< std::string >( "output_file_name",
+    decays, ok );
 
 ///////////////////////////////////
 
@@ -233,31 +214,12 @@ int main( int argc, char* argv[] ) {
 
   int residue_net_charge = Delta_Z + TARGET_NET_CHARGE;
 
-  #ifdef USE_ROOT
-    // Create a ROOT tree to store the events
-    TFile out_file( output_file_name.c_str(), "recreate" );
+  // Prepare the output file
+  std::string out_config_str = "{ format: \"ascii\","
+    " file: \"" + output_file_name + "\", mode: \"overwrite\" }";
+  auto out_config = marley::JSON::load( out_config_str );
 
-    TTree* out_tree = new TTree( "MARLEY_event_tree",
-      "Compound nucleus decay events generated by MARLEY" );
-
-    // We create a branch to store the events here, but set the branch
-    // address to nullptr. This will be fixed later when write_event()
-    // is called.
-    out_tree->Branch( "event", "marley::Event", nullptr );
-  #else
-    std::ofstream out_ascii_file( output_file_name );
-  #endif
-
-  // Write a dummy flux-averaged cross section value to the output file. This
-  // keeps utilities like marsum happy.
-  #ifdef USE_ROOT
-    TParameter<double> dummy_xsec( "MARLEY_flux_avg_xsec", 0. );
-    out_file.cd();
-    dummy_xsec.Write();
-  #else
-    double dummy_xsec = 0.;
-    out_ascii_file << dummy_xsec << '\n';
-  #endif
+  auto out_file = marley::OutputFile::make_OutputFile( out_config );
 
   for ( long evnum = 0; evnum < num_events; ++evnum ) {
 
@@ -284,13 +246,8 @@ int main( int argc, char* argv[] ) {
       }
     }
 
-    // Create the event object with a dummy projectile, target, and ejectile.
     int target_pdg = marley_utils::get_nucleus_pid( Zi, Ai );
     int residue_pdg = marley_utils::get_nucleus_pid( Zf, Af );
-
-    marley::Particle projectile( projectile_pdg, 0., 0., 0., 0., 0 );
-    marley::Particle target( target_pdg, 0., 0., 0., 0., 0., 0 );
-    marley::Particle ejectile( ejectile_pdg, 0., 0., 0., 0., 0., 0 );
 
     // Approximate the ground-state mass of the (possibly ionized) residue by
     // subtracting the appropriate number of electron masses from its atomic
@@ -302,31 +259,22 @@ int main( int argc, char* argv[] ) {
     // simulating its decays without worrying about a primary 2 --> 2
     // interaction, let it be at rest in the lab frame.
     double m_residue = residue_gs_mass + Ex;
-    marley::Particle residue( residue_pdg, m_residue, 0., 0., 0.,
-      m_residue, residue_net_charge );
 
-    marley::Event event( projectile, target, ejectile,
-      residue, Ex, twoJ, parity );
+    auto residue = marley_hepmc3::make_particle( residue_pdg, 0., 0., 0.,
+      m_residue, marley_hepmc3::NUHEPMC_UNDECAYED_RESIDUE_STATUS, m_residue );
+
+    // Create the event object with a dummy projectile, target, and ejectile.
+    auto event = make_event_object( projectile_pdg, target_pdg, ejectile_pdg,
+      proc_type, Ex, twoJ, parity, residue, residue_net_charge );
 
     // Pass the event to the nuclear de-excitation simulation
     marley::NucleusDecayer nd;
-    nd.process_event( event, gen );
+    nd.process_event( *event, gen );
 
-    // We're done
-    #ifdef USE_ROOT
-      // Write the new event to the output ROOT TTree
-      marley::Event* temp_event_ptr = &event;
-      out_tree->SetBranchAddress( "event", &temp_event_ptr );
-      out_tree->Fill();
-    #else
-      out_ascii_file << event << '\n';
-    #endif
+    // We're done, write out the event
+    out_file->write_event( event.get() );
 
     std::cout << "Event " << evnum << ":\n" << event << '\n';
   }
-
-  #ifdef USE_ROOT
-    out_tree->Write();
-  #endif
 
 }
