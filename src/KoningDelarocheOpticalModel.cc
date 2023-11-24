@@ -96,10 +96,10 @@ marley::KoningDelarocheOpticalModel::KoningDelarocheOpticalModel( int Z,
   aso_p = om["aSO0"]; // fm
   Rc = om["rC0"]*A_to_the_one_third + om["rCA"]/A_to_the_one_third
     + om["rCA2"]*std::pow( A_to_the_one_third, -4 ); // fm
-  Vcbar_p = 1.73 * Z_ / Rc; // MeV
-  // TODO: use this expression when updating the OM after validating that
-  // you reproduce KD. See the Pruitt paper. KD approximate (6/5)*e^2 = 1.73
-  // Vcbar_p = 6. * Z_ * marley_utils::e2 / ( 5. * Rc );
+
+  // Note that Koning and Delaroche approximated (6/5)*e^2 = 1.73 in their
+  // original paper, following a book by Wilkinson cited in their bibliography.
+  Vcbar_p = 6. * Z_ * marley_utils::e2 / ( 5. * Rc ); // MeV
 }
 
 std::complex< double >
