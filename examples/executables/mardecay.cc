@@ -129,6 +129,7 @@ int main( int argc, char* argv[] ) {
   #endif
 
   marley::Generator gen = jc.create_generator();
+  gen.set_up_run_info();
 
   // Parse the extra "decay sim" configuration parameters
   const marley::JSON& json = jc.get_json();
@@ -141,9 +142,9 @@ int main( int argc, char* argv[] ) {
   const std::string decay_config_label( "decays" );
 
   marley::JSON decays;
-  ok = get_from_json< marley::JSON >( "decay", json, decays );
-  if ( !ok ) throw marley::Error( "Missing key 'decays' in job configuration"
-    " file" );
+  ok = get_from_json< marley::JSON >( decay_config_label, json, decays );
+  if ( !ok ) throw marley::Error( "Missing key '" + decay_config_label
+    + "' in job configuration file" );
 
   // Get the total number of events to be simulated (default to 1e3 events)
   long num_events = assign_from_json< long >( "events", decays, ok, 1000 );
@@ -271,10 +272,13 @@ int main( int argc, char* argv[] ) {
     marley::NucleusDecayer nd;
     nd.process_event( *event, gen );
 
+    // Add a little metadata to the event (attach run info, etc.)
+    gen.finish_event_metadata( *event );
+
     // We're done, write out the event
     out_file->write_event( event.get() );
 
-    std::cout << "Event " << evnum << ":\n" << event << '\n';
+    std::cout << "Event " << evnum << "\n";
   }
 
 }

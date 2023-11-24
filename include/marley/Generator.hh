@@ -278,6 +278,14 @@ namespace marley {
       inline void set_run_info( const std::shared_ptr< HepMC3::GenRunInfo >&
         run_info ) { run_info_ = run_info; }
 
+      /// @brief Initializes the owned GenRunInfo object that will be used
+      /// to associate run metadata with the output events
+      void set_up_run_info();
+
+      /// @brief Add final pieces of metadata (e.g., the RNG state) to an
+      /// otherwise complete event
+      void finish_event_metadata( HepMC3::GenEvent& ev );
+
     private:
 
       /// @brief Create a Generator using default settings except for
@@ -401,14 +409,6 @@ namespace marley {
       /// @return Total cross section (MeV<sup> -2</sup>)
       double total_xs(int pdg_a, double KEa, int pdg_atom,
         std::vector<size_t>* index_vec, std::vector<double>* xsec_vec) const;
-
-      /// @brief Initializes the owned GenRunInfo object that will be used
-      /// to associate run metadata with the output events
-      void set_up_run_info();
-
-      /// @brief Add final pieces of metadata (e.g., the RNG state) to an
-      /// otherwise complete event
-      void finish_event_metadata( HepMC3::GenEvent& ev );
 
       /// @brief Sets the saved string copy of the JSON configuration used to
       /// initialize the generator
