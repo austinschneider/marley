@@ -178,7 +178,8 @@ Please ensure that the HepMC3-config executable is on your PATH and try again.
     $(error "$(hepmc3_err_message)")
   endif
 
-  # Add the appropriate compilation flags to use the GNU Scientific Library
+  # Add the appropriate compilation flags to use the HepMC3 reference
+  # implementation
   HEPMC3_CXXFLAGS := $(shell $(HEPMC3CONFIG) --cflags)
   HEPMC3_LDFLAGS := $(shell $(HEPMC3CONFIG) --libs)
 
@@ -320,10 +321,12 @@ mroot: $(MARLEY_LIBS)
 marley-config: $(MARLEY_LIBS)
 	$(RM) marley-config
 	cp $(SRC_DIR)/scripts/marley-config.in marley-config
-	sed -i.bak -e '/^##/d' -e "s/@@VERSION@@/\"$(MARLEY_VERSION)\"/g" \
-	  -e "s/@@GIT_REVISION@@/\"$(GIT_REVISION)\"/g" \
-	  -e "s/@@CXX_STD@@/\"$(CXX_STD)\"/g" \
-	  -e "s/@@USE_ROOT@@/\"$(USE_ROOT)\"/g" marley-config
+	sed -i.bak -e '/^##/d' -e "s|@@VERSION@@|\"$(MARLEY_VERSION)\"|g" \
+	  -e "s|@@GIT_REVISION@@|\"$(GIT_REVISION)\"|g" \
+	  -e "s|@@CXX_STD@@|\"$(CXX_STD)\"|g" \
+	  -e "s|@@HEPMC3_CFLAGS@@|\"$(HEPMC3_CXXFLAGS)\"|g" \
+	  -e "s|@@HEPMC3_LIBS@@|\"$(HEPMC3_LDFLAGS)\"|g" \
+	  -e "s|@@USE_ROOT@@|\"$(USE_ROOT)\"|g" marley-config
 	$(RM) marley-config.bak
 
 marley: $(MARLEY_LIBS) marley.o marley-config $(MAYBE_MARSUM)
