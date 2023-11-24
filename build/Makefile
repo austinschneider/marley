@@ -6,7 +6,7 @@ INCLUDE_DIR = $(TOP_DIR)/include
 SRC_DIR = $(TOP_DIR)/src
 
 # Default version of the C++ standard to use for compilation
-CXX_STD=c++14
+CXX_STD=c++17
 
 UNKNOWN_REV=unknown version
 
@@ -208,22 +208,23 @@ Please ensure that the HepMC3-config executable is on your PATH and try again.
       MAYBE_MARSUM = marsum mroot
       ROOT_CXXFLAGS := $(shell $(ROOTCONFIG) --cflags)
 
-      # If ROOT was built with C++17 support, switch to building
-      # MARLEY with -std=c++17 as well. Otherwise we're likely
-      # to hit problems with std::string_view in ROOT headers, etc.
-      # Later -std options take precedence, so just tack on
-      # a new one to keep things simple.
-      ifneq (, $(findstring c++1z, $(ROOT_CXXFLAGS)))
-        override CXX_STD = c++1z
-        override CXXFLAGS += -std=$(CXX_STD)
-      endif
-      ifneq (, $(findstring c++17, $(ROOT_CXXFLAGS)))
-        override CXX_STD = c++17
-        override CXXFLAGS += -std=$(CXX_STD)
-      endif
-      # Do the same thing for C++2a
+      # If ROOT was built with a later C++ standard, switch to building MARLEY
+      # with it as well, just in case. Later -std options take precedence, so
+      # just tack on a new one to keep things simple.
       ifneq (, $(findstring c++2a, $(ROOT_CXXFLAGS)))
         override CXX_STD = c++2a
+        override CXXFLAGS += -std=$(CXX_STD)
+      endif
+      ifneq (, $(findstring c++20, $(ROOT_CXXFLAGS)))
+        override CXX_STD = c++20
+        override CXXFLAGS += -std=$(CXX_STD)
+      endif
+      ifneq (, $(findstring c++2b, $(ROOT_CXXFLAGS)))
+        override CXX_STD = c++2b
+        override CXXFLAGS += -std=$(CXX_STD)
+      endif
+      ifneq (, $(findstring c++23, $(ROOT_CXXFLAGS)))
+        override CXX_STD = c++23
         override CXXFLAGS += -std=$(CXX_STD)
       endif
 

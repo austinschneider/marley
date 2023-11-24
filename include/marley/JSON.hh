@@ -565,18 +565,18 @@ namespace marley {
         return;
       }
 
-    private:
-
-      void check_if_object(const std::string& key) {
-        if (type_ != DataType::Object) throw marley::Error("Attempted"
-          " to retrieve a value for the key '" + key + " from a JSON primitive"
-          " that is not an object");
+      void check_if_object( const std::string& key ) const {
+        if ( type_ != DataType::Object ) throw marley::Error( "Attempted"
+          " to retrieve a value for the key '" + key + "' from a JSON"
+          " primitive that is not an object" );
       }
 
-      void set_type(DataType type) {
-        if (type == type_) return;
+    private:
 
-        switch(type_) {
+      void set_type( DataType type ) {
+        if ( type == type_ ) return;
+
+        switch( type_ ) {
           case DataType::Object:
             delete data_.map_;
             break;
@@ -589,15 +589,15 @@ namespace marley {
           default:;
         }
 
-        switch(type) {
+        switch( type ) {
           case DataType::Null:
             data_.map_ = nullptr;
             break;
           case DataType::Object:
-            data_.map_ = new std::map<std::string, JSON>();
+            data_.map_ = new std::map< std::string, JSON >();
             break;
           case DataType::Array:
-            data_.list_ = new std::deque<JSON>();
+            data_.list_ = new std::deque< JSON >();
             break;
           case DataType::String:
             data_.string_ = new std::string();
@@ -620,86 +620,88 @@ namespace marley {
 
       // Attempts to get a floating point number from a JSON object with
       // a given key. If the attempt fails, throw a marley::Error.
-      double get_double(const std::string& key) {
-        check_if_object(key);
-        if (has_key(key)) return this->at(key).to_double_or_throw();
-        else throw marley::Error("Missing JSON key '" + key + '\'');
+      double get_double( const std::string& key ) const {
+        check_if_object( key );
+        if ( has_key(key) ) return this->at( key ).to_double_or_throw();
+        else throw marley::Error( "Missing JSON key '" + key + '\'' );
         return 0.;
       }
 
       // Attempts to get a floating point number from a JSON object with
       // a given key. If the key doesn't exist, use a default value. If a
       // conversion attempt fails, throw a marley::Error.
-      double get_double(const std::string& key, double default_value) {
-        check_if_object(key);
-        if (!has_key(key)) return default_value;
-        else return this->at(key).to_double_or_throw();
+      double get_double( const std::string& key, double default_value ) const {
+        check_if_object( key );
+        if ( !has_key(key) ) return default_value;
+        else return this->at( key ).to_double_or_throw();
       }
 
       // Attempts to get an integer from a JSON object with
       // a given key. If the attempt fails, throw a marley::Error.
-      long get_long(const std::string& key) {
-        check_if_object(key);
-        if (has_key(key)) return this->at(key).to_long_or_throw();
-        else throw marley::Error("Missing JSON key '" + key + '\'');
+      long get_long( const std::string& key ) const {
+        check_if_object( key );
+        if ( has_key(key) ) return this->at( key ).to_long_or_throw();
+        else throw marley::Error( "Missing JSON key '" + key + '\'' );
         return 0.;
       }
 
       // Attempts to get an integer from a JSON object with
       // a given key. If the key doesn't exist, use a default value. If a
       // conversion attempt fails, throw a marley::Error.
-      long get_long(const std::string& key, long default_value) {
-        check_if_object(key);
-        if (!has_key(key)) return default_value;
-        else return this->at(key).to_long_or_throw();
+      long get_long( const std::string& key, long default_value ) const {
+        check_if_object( key );
+        if ( !has_key(key) ) return default_value;
+        else return this->at( key ).to_long_or_throw();
       }
 
       // Attempts to get a bool from a JSON object with
       // a given key. If the attempt fails, throw a marley::Error.
-      bool get_bool(const std::string& key) {
-        check_if_object(key);
-        if (has_key(key)) return this->at(key).to_bool_or_throw();
-        else throw marley::Error("Missing JSON key '" + key + '\'');
+      bool get_bool( const std::string& key ) const {
+        check_if_object( key );
+        if ( has_key(key) ) return this->at( key ).to_bool_or_throw();
+        else throw marley::Error( "Missing JSON key '" + key + '\'' );
         return 0.;
       }
 
       // Attempts to get a bool from a JSON object with
       // a given key. If the key doesn't exist, use a default value. If a
       // conversion attempt fails, throw a marley::Error.
-      bool get_bool(const std::string& key, bool default_value) {
-        check_if_object(key);
-        if (!has_key(key)) return default_value;
-        else return this->at(key).to_bool_or_throw();
+      bool get_bool( const std::string& key, bool default_value ) const {
+        check_if_object( key );
+        if ( !has_key(key) ) return default_value;
+        else return this->at( key ).to_bool_or_throw();
       }
 
       // Attempts to get a string from a JSON object with
       // a given key. If the attempt fails, throw a marley::Error.
-      std::string get_string(const std::string& key) {
-        check_if_object(key);
-        if (has_key(key)) return this->at(key).to_string_or_throw();
-        else throw marley::Error("Missing JSON key '" + key + '\'');
-        return std::string("");
+      std::string get_string( const std::string& key ) const {
+        check_if_object( key );
+        if ( has_key(key) ) return this->at( key ).to_string_or_throw();
+        else throw marley::Error( "Missing JSON key '" + key + '\'' );
+        return std::string( "" );
       }
 
       // Attempts to get a string from a JSON object with
       // a given key. If the key doesn't exist, use a default value. If a
       // conversion attempt fails, throw a marley::Error.
-      std::string get_string(const std::string& key,
-        const std::string& default_value)
+      std::string get_string( const std::string& key,
+        const std::string& default_value ) const
       {
-        check_if_object(key);
-        if (!has_key(key)) return default_value;
-        else return this->at(key).to_string_or_throw();
+        check_if_object( key );
+        if ( !has_key(key) ) return default_value;
+        else return this->at( key ).to_string_or_throw();
       }
 
       // Copies a subobject from a JSON object with a given key. If the attempt
       // fails, throw a marley::Error, unless the user asks us not to do so.
-      marley::JSON get_object(const std::string& key, bool throw_error = true)
+      marley::JSON get_object( const std::string& key,
+        bool throw_error = true ) const
       {
-        check_if_object(key);
-        if (has_key(key)) return this->at(key);
-        else if (throw_error) marley::Error("Missing JSON key '" + key + '\'');
-        return JSON::make(JSON::DataType::Object);
+        check_if_object( key );
+        if ( has_key(key) ) return this->at( key );
+        else if ( throw_error ) marley::Error(
+          "Missing JSON key '" + key + '\'' );
+        return JSON::make( JSON::DataType::Object );
       }
 
     private:
@@ -709,23 +711,23 @@ namespace marley {
 
   namespace {
 
-    JSON parse_next(std::istream&);
+    JSON parse_next( std::istream& );
 
-    void issue_parse_error(char found_char, const std::string& message)
+    void issue_parse_error( char found_char, const std::string& message )
     {
-      std::string msg(message);
-      if (found_char == std::ifstream::traits_type::eof())
+      std::string msg( message );
+      if ( found_char == std::ifstream::traits_type::eof() )
         msg += "end-of-file";
-      else msg += std::string("\'") + found_char + '\'';
+      else msg += std::string( "\'" ) + found_char + '\'';
       //MARLEY_LOG_WARNING() << msg;
       throw marley::Error( msg );
     }
 
-    void issue_parse_error(const std::string& found_str,
-      const std::string& message, const std::istream& is)
+    void issue_parse_error( const std::string& found_str,
+      const std::string& message, const std::istream& is )
     {
-      std::string msg(message);
-      if (!is) msg += "end-of-file";
+      std::string msg( message );
+      if ( !is ) msg += "end-of-file";
       else msg += '\'' + found_str + '\'';
       //MARLEY_LOG_WARNING() << msg;
       throw marley::Error( msg );
@@ -734,58 +736,58 @@ namespace marley {
     // Skips single-line comments // and multi-line comments /* */
     // These are technically not valid in JSON (the standard doesn't allow
     // comments), but they are valid in Javascript object literals.
-    void skip_comment(std::istream& in, bool is_multiline = false) {
-      if (is_multiline) {
+    void skip_comment( std::istream& in, bool is_multiline = false ) {
+      if ( is_multiline ) {
         char c;
-        while (in.get(c)) {
-          if (c == '*' && in.peek() == '/') {
+        while ( in.get(c) ) {
+          if ( c == '*' && in.peek() == '/' ) {
             in.ignore();
             break;
           }
         }
       }
       // Ignore all further characters until either a newline or end-of-file
-      else in.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+      else in.ignore( std::numeric_limits<std::streamsize>::max(), '\n' );
     }
 
     // Skips whitespace and comments, saving the last character read to
     // read_char.
-    void skip_ws(std::istream& in, char& read_char) {
-      while (read_char = in.get(), std::isspace(read_char)) continue;
-      if (read_char == '/') {
+    void skip_ws( std::istream& in, char& read_char ) {
+      while ( read_char = in.get(), std::isspace(read_char) ) continue;
+      if ( read_char == '/' ) {
         char c = in.peek();
-        if (c == '/' || c == '*') {
+        if ( c == '/' || c == '*' ) {
           read_char = in.get();
-          skip_comment(in, c == '*');
-          return skip_ws(in, read_char);
+          skip_comment( in, c == '*' );
+          return skip_ws( in, read_char );
         }
       }
     }
 
     // Removes whitespace and comments from the input stream, putting back
     // the first non-whitespace and non-comment character it finds.
-    void consume_ws(std::istream& in) {
+    void consume_ws( std::istream& in ) {
       static char next;
-      skip_ws(in, next);
-      in.putback(next);
+      skip_ws( in, next );
+      in.putback( next );
     }
 
     // Removes whitespace and comments from the input stream, returning the
     // first non-whitespace and non-comment character it finds.
-    char get_next_char(std::istream& in)
+    char get_next_char( std::istream& in )
     {
       static char next;
-      skip_ws(in, next);
+      skip_ws( in, next );
       return next;
     }
 
-    JSON parse_object(std::istream& in) {
+    JSON parse_object( std::istream& in ) {
 
-      JSON object = JSON::make(JSON::DataType::Object);
+      JSON object = JSON::make( JSON::DataType::Object );
 
-      for (;;) {
+      for ( ;; ) {
 
-        consume_ws(in);
+        consume_ws( in );
         JSON key;
 
         if ( in.peek() == '}' ) {
@@ -801,9 +803,9 @@ namespace marley {
         else {
           std::string key_str;
           char c;
-          while (in.get(c)) {
-            if (c == ':' || std::isspace(c)) {
-              in.putback(c);
+          while ( in.get(c) ) {
+            if ( c == ':' || std::isspace(c) ) {
+              in.putback( c );
               break;
             }
             key_str += c;
@@ -811,21 +813,21 @@ namespace marley {
           key = key_str;
         }
 
-        char next = get_next_char(in);
+        char next = get_next_char( in );
         if ( next != ':' ) {
-          issue_parse_error(next, "JSON object: Expected colon, found ");
+          issue_parse_error( next, "JSON object: Expected colon, found " );
           break;
         }
 
-        consume_ws(in);
-        JSON value = parse_next(in);
-        object[key.to_string()] = value;
+        consume_ws( in );
+        JSON value = parse_next( in );
+        object[ key.to_string() ] = value;
 
-        next = get_next_char(in);
+        next = get_next_char( in );
         if ( next == ',' ) continue;
         else if ( next == '}' ) break;
         else {
-          issue_parse_error(next, "JSON object: Expected comma, found ");
+          issue_parse_error( next, "JSON object: Expected comma, found " );
           break;
         }
       }
@@ -917,7 +919,8 @@ namespace marley {
         c = in.get();
       }
       if ( c == 'E' || c == 'e' ) {
-        if ( in.peek() == '-' ){ in.ignore(); exp_str += '-';}
+        if ( in.peek() == '-' ) { in.ignore(); exp_str += '-'; }
+        else if ( in.peek() == '+' ) { in.ignore(); }
         for (;;) {
           c = in.get();
           if ( c >= '0' && c <= '9' )
@@ -983,8 +986,8 @@ namespace marley {
       return null;
     }
 
-    JSON parse_next(std::istream& in) {
-      char value = get_next_char(in);
+    JSON parse_next( std::istream& in ) {
+      char value = get_next_char( in );
       switch(value) {
         case '[' : return parse_array(in);
         case '{' : return parse_object(in);
@@ -1015,7 +1018,7 @@ namespace marley {
   }
 
   inline JSON JSON::load(std::istream& in) {
-    char first = get_next_char(in);
+    char first = get_next_char( in );
     if (first != '{') {
       throw marley::Error("Missing '{' at beginning of JSON object");
       in.putback(first);
@@ -1043,4 +1046,206 @@ inline std::ostream& operator<<(std::ostream &os, const marley::JSON& json) {
 inline std::istream& operator>>(std::istream &is, marley::JSON& json) {
   json = marley::JSON::load(is);
   return is;
+}
+
+/////////////////////////////////////////////////////////
+// Utility function templates for retrieval of JSON data
+/////////////////////////////////////////////////////////
+
+// Detects whether type T has a member function 'push_back' that is callable
+// with an argument of T::value_type. Examples include std::vector,
+// std::deque, etc.
+template < typename T, typename = void > struct HasPushBack
+  : std::false_type {};
+
+template < typename T > struct HasPushBack< T, std::void_t< decltype(
+  std::declval< T >().push_back( std::declval< typename T::value_type >() )
+  ) > > : std::true_type {};
+
+// Detects whether type T has a member function 'clear' that is callable with
+// an argument of T::value_type. Examples include std::vector, std::deque,
+// etc.
+template < typename T, typename = void > struct HasClear
+  : std::false_type {};
+
+template < typename T > struct HasClear< T, std::void_t< decltype(
+  std::declval< T >().clear() ) > > : std::true_type {};
+
+// Detects whether type T has member types 'key_type' and 'mapped_type' (and is
+// thus like a std::map or std::unordered_map. See
+// https://stackoverflow.com/a/35293958/4081973 for more details.
+template< typename T, typename = void > struct IsMappish : std::false_type { };
+
+template<typename T> struct IsMappish< T, std::void_t< typename T::key_type,
+    typename T::mapped_type, decltype(
+    std::declval< T& >()[ std::declval< const typename T::key_type& >() ] )
+    > > : std::true_type { };
+
+/// Convert a JSON object to multiple data types using a common interface
+template < typename T > bool convert_json( const marley::JSON& json,
+  T& result )
+{
+  // This option includes both integers and boolean types, so we need to
+  // explicitly distinguish between them
+  if constexpr ( std::is_integral_v< T > ) {
+
+    // If a boolean was requested just retrieve it and return
+    if constexpr ( std::is_same_v< bool, T > ) {
+      result = json.to_bool_or_throw();
+      return true;
+    }
+
+    // For other integer types, first retrieve a value as a long int (the
+    // standard representation for marley::JSON integers)
+    long temp_long = json.to_long_or_throw();
+
+    // If the requested type is unsigned, then double-check that we're not
+    // working with a negative value stored in the JSON object. If we are,
+    // then complain
+    if constexpr ( std::is_unsigned_v< T > ) {
+      if ( temp_long < 0 ) throw marley::Error( "Negative value "
+        + std::to_string(temp_long) + " encountered when retrieving an"
+        " unsigned integer from the JSON object '" + json.dump_string() + "'" );
+    }
+
+    // Things seem ok, so cast to the desired output type before returning
+    result = static_cast< T >( temp_long );
+    return true;
+  }
+
+  // For floating-point types, first retrieve a value as a double (the
+  // standard representation for marley::JSON floating-point numbers)
+  if constexpr ( std::is_floating_point_v< T > ) {
+    double temp_double = json.to_double_or_throw();
+
+    // Do any needed type conversion (e.g., to float) via this cast, then
+    // return
+    result = static_cast< T >( temp_double );
+    return true;
+  }
+
+  if constexpr ( std::is_same_v< std::string, T > ) {
+    result = json.to_string_or_throw();
+    return true;
+  }
+
+  // If we've been handed a container that implements the push_back() and
+  // clear() methods, then we will assume a JSON array is meant to be parsed.
+  // Note that although JSON arrays are allowed to contain elements of
+  // multiple data types, this implementation assumes that they are all
+  // representable as T::value_type.
+  if constexpr ( HasPushBack< T >::value && HasClear< T >::value ) {
+
+    // Empty the container's existing contents
+    result.clear();
+
+    // Complain if we're not actually working with a JSON array. Default
+    // to using the input JSON object itself if we weren't handed a key.
+    if ( !json.is_array() ) throw marley::Error( "Invalid JSON array '"
+      + json.dump_string() + "'" );
+
+    // Fill the container with the JSON array elements using a dummy object
+    // to allow for recursion
+    auto elements = json.array_range();
+    for ( const auto& el : elements ) {
+
+      typename T::value_type temp_val;
+      bool ok = convert_json( el, temp_val );
+
+      // Save the element in the container if parsing went all right
+      if ( ok ) result.push_back( temp_val );
+      // Otherwise, complain
+      else throw marley::Error( "Invalid array entry '" + el.dump_string()
+        + "' found when parsing JSON array '" + json.dump_string() + "'" );
+    }
+
+    return true;
+  }
+
+  // If we've been handed a container that is "mappish" and implements the
+  // clear() method, then we will assume a JSON object is meant to be parsed
+  // into a map of key-value pairs. Note that this implementation requires
+  // elements of the JSON object to have the same data type.
+  if constexpr ( IsMappish< T >::value && HasClear< T >::value ) {
+
+    // Empty the container's existing contents
+    result.clear();
+
+    // Complain if we're not actually working with a JSON object. Default
+    // to using the input JSON object itself if we weren't handed a key.
+    if ( !json.is_object() ) throw marley::Error( "Invalid JSON object '"
+      + json.dump_string() + "'" );
+
+    // Fill the container with the JSON object elements using recursion
+    auto elements = json.object_range();
+    for ( const auto& el : elements ) {
+
+      std::string element_key = el.first;
+      const marley::JSON& element_json = el.second;
+
+      typename T::mapped_type temp_val;
+      bool ok = convert_json( element_json, temp_val );
+
+      // Save the element in the container if parsing went all right
+      if ( ok ) result[ element_key ] = temp_val;
+      // Otherwise, complain
+      else throw marley::Error( "Invalid map entry '"
+        + element_json.dump_string() + "' found when parsing JSON object '"
+        + json.dump_string() + "'" );
+    }
+
+    return true;
+  }
+
+  // If we get here, then no conversion is implemented for the requested data
+  // type
+  return false;
+}
+
+// Alternate version that provides a default value if conversion fails
+template < typename T > bool convert_json( const marley::JSON& json,
+  T& result, T def_val )
+{
+  bool ok = convert_json( json, result );
+  if ( !ok ) result = def_val;
+  return ok;
+}
+
+// Alternate version that returns the converted value or a default one while
+// storing the boolean flag indicating success (true) or failure (false)
+template < typename T > T assign_from_json( const marley::JSON& json,
+  bool& ok, T def_val = T() )
+{
+  T temp;
+  ok = convert_json( json, temp, def_val );
+  return temp;
+}
+
+/// Interface that converts an element of a JSON object with a given key
+template < typename T > bool get_from_json( const std::string& key,
+  const marley::JSON& json, T& result )
+{
+  json.check_if_object( key );
+  if ( !json.has_key(key) ) return false;
+  const marley::JSON& element = json.at( key );
+  return convert_json( element, result );
+}
+
+// Alternate version that provides a default value if retrieval fails
+template < typename T > bool get_from_json( const std::string& key,
+  const marley::JSON& json, T& result, T def_val )
+{
+  bool ok = get_from_json( key, json, result );
+  if ( !ok ) result = def_val;
+  return ok;
+}
+
+// Alternate version that returns the retrieved value or a default one while
+// storing the boolean flag indicating success (true) or failure (false)
+template < typename T > T assign_from_json( const std::string& key,
+  const marley::JSON& json, bool& ok, T def_val = T() )
+{
+  T temp;
+  ok = get_from_json( key, json, temp, def_val );
+  return temp;
 }
