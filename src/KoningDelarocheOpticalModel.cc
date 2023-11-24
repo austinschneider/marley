@@ -14,12 +14,93 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
-#include "marley/marley_utils.hh"
-#include "marley/HauserFeshbachDecay.hh"
-#include "marley/Logger.hh"
-#include "marley/KoningDelarocheOpticalModel.hh"
-
 #include "marley/coulomb_wavefunctions.hh"
+#include "marley/marley_utils.hh"
+
+#include "marley/HauserFeshbachDecay.hh"
+#include "marley/JSON.hh"
+#include "marley/KoningDelarocheOpticalModel.hh"
+#include "marley/Logger.hh"
+
+marley::KoningDelarocheOpticalModel::KoningDelarocheOpticalModel( int Z,
+  int A, const marley::JSON& om_config ) : marley::OpticalModel( Z, A )
+{
+  // Set the step size (fm) for numerically solving the Schrodinger equation
+  // using Numerov's method
+  get_from_json( "step_size", om_config, step_size_,
+    DEFAULT_NUMEROV_STEP_SIZE_ );
+
+  // Calculate the target mass
+  const auto& mt = marley::MassTable::Instance();
+  target_mass_ = mt.get_atomic_mass( Z, A );
+
+  // Parse the JSON input needed to set up the optical model parameters
+  marley::KoningDelarocheOpticalModel::ParamConfig om( om_config );
+
+  // Initialize the spherical optical model parameters (see
+  // https://doi.org/10.1103/PhysRevC.107.014602)
+
+  int N = A_ - Z_; // Neutron number
+  double alpha = ( N - Z_ ) / static_cast< double >( A_ );
+
+  double A_to_the_one_third = std::pow( A_, 1.0/3.0 );
+
+  // Neutrons
+  v1n = om["v10"] - om["v1A"]*A_ - om["v1alpha"]*alpha; // MeV
+  v2n = om["vn20"] - om["vn2A"]*A_; // MeV^(-1)
+  v3n = om["vn30"] - om["vn3A"]*A_; // MeV^(-2)
+  v4n = om["v40"]; // MeV^(-3)
+  w1n = om["wn10"] - om["wn1A"]*A_; // MeV
+  w2n = om["w20"] + om["w2A"]*A_; // MeV
+  d1n = om["d10"] - om["d1alpha"]*alpha; // MeV
+  d2n = om["d20"] + om["d2A"]/( 1. + std::exp(
+    ( A_ - om["d2A3"]) / om["d2A2"] )
+  ); // MeV^(-1)
+  d3n = om["d30"]; // MeV
+  vso1n = om["vSO10"] + om["vSO1A"]*A_; // MeV
+  vso2n = om["vSO20"]; // MeV^(-1)
+  wso1n = om["wSO10"]; // MeV
+  wso2n = om["wSO20"]; // MeV
+  Efn = -11.2814 + 0.02646*A_; // MeV
+  Rvn = om["rV0"]*A_to_the_one_third - om["rVA"]; // fm
+  avn = om["aV0"] - om["aVA"]*A_; // fm
+  Rdn = om["rD0"]*A_to_the_one_third
+    - om["rDA"]*std::pow( A_to_the_one_third, 2 ); // fm
+  adn = om["anD0"] - om["anDA"]*A_; // fm
+  Rso_n = om["rSO0"]*A_to_the_one_third - om["rSOA"]; // fm
+  aso_n = om["aSO0"]; // fm
+
+  // Protons
+  v1p = om["v10"] - om["v1A"]*A_ + om["v1alpha"]*alpha; // MeV
+  v2p = om["vp20"] + om["vp2A"]*A_; // MeV^(-1)
+  v3p = om["vp30"] + om["vp3A"]*A_; // MeV^(-2)
+  v4p = om["v40"]; // MeV^(-3)
+  w1p = om["wp10"] + om["wp1A"]*A_; // MeV
+  w2p = om["w20"] + om["w2A"]*A_; // MeV
+  d1p = om["d10"] + om["d1alpha"]*alpha; // MeV
+  d2p = om["d20"] + om["d2A"]/( 1. + std::exp(
+    ( A_ - om["d2A3"]) / om["d2A2"] )
+  ); // MeV^(-1)
+  d3p = om["d30"]; // MeV
+  vso1p = om["vSO10"] + om["vSO1A"]*A_; // MeV
+  vso2p = om["vSO20"]; // MeV^(-1)
+  wso1p = om["wSO10"]; // MeV
+  wso2p = om["wSO20"]; // MeV
+  Efp = -8.4075 + 0.01378*A_; // MeV
+  Rvp = om["rV0"]*A_to_the_one_third - om["rVA"]; // fm
+  avp = om["aV0"] - om["aVA"]*A_; // fm
+  Rdp = om["rD0"]*A_to_the_one_third
+    - om["rDA"]*std::pow( A_to_the_one_third, 2 ); // fm
+  adp = om["apD0"] + om["apDA"]*A_; // fm
+  Rso_p = om["rSO0"]*A_to_the_one_third - om["rSOA"]; // fm
+  aso_p = om["aSO0"]; // fm
+  Rc = om["rC0"]*A_to_the_one_third + om["rCA"]/A_to_the_one_third
+    + om["rCA2"]*std::pow( A_to_the_one_third, -4 ); // fm
+  Vcbar_p = 1.73 * Z_ / Rc; // MeV
+  // TODO: use this expression when updating the OM after validating that
+  // you reproduce KD. See the Pruitt paper. KD approximate (6/5)*e^2 = 1.73
+  // Vcbar_p = 6. * Z_ * marley_utils::e2 / ( 5. * Rc );
+}
 
 std::complex< double >
 marley::KoningDelarocheOpticalModel::optical_model_potential( double r,
@@ -189,69 +270,6 @@ void marley::KoningDelarocheOpticalModel::calculate_om_parameters(
       Wso *= factor;
     }
   }
-}
-
-marley::KoningDelarocheOpticalModel::KoningDelarocheOpticalModel( int Z,
-  int A, double step_size ) : marley::OpticalModel( Z, A ),
-  step_size_( step_size )
-{
-  const auto& mt = marley::MassTable::Instance();
-  target_mass_ = mt.get_atomic_mass( Z, A );
-
-  int N = A_ - Z_; // Neutron number
-
-  double A_to_the_one_third = std::pow( A_, 1.0/3.0 );
-
-  // Initialize the spherical optical model parameters (see TALYS 1.6 manual)
-
-  // Neutrons
-  v1n = 59.30 - 21.0*( N - Z_ )/A_ - 0.024*A_; // MeV
-  v2n = 0.007228 - 1.48e-6*A_; // MeV^(-1)
-  v3n = 1.994e-5 - 2.0e-8*A_; // MeV^(-2)
-  v4n = 7e-9; // MeV^(-3)
-  w1n = 12.195 + 0.0167*A_; // MeV
-  w2n = 73.55 + 0.0795*A_; // MeV
-  d1n = 16.0 - 16.0*(N - Z_)/A_; // MeV
-  d2n = 0.0180 + 0.003802/( 1 + std::exp((A_ - 156.)/8.0) ); // MeV^(-1)
-  d3n = 11.5; // MeV
-  vso1n = 5.922 + 0.0030*A_; // MeV
-  vso2n = 0.0040; // MeV^(-1)
-  wso1n = -3.1; // MeV
-  wso2n = 160.; // MeV
-  Efn = -11.2814 + 0.02646*A_; // MeV
-  Rvn = 1.3039*A_to_the_one_third - 0.4054; // fm
-  avn = 0.6778 - 1.487e-4*A_; // fm
-  Rdn = 1.3424*A_to_the_one_third
-    - 0.01585*std::pow( A_to_the_one_third, 2 ); // fm
-  adn = 0.5446 - 1.656e-4*A_; // fm
-  Rso_n = 1.1854*A_to_the_one_third - 0.647; // fm
-  aso_n = 0.59; // fm
-
-  // Protons
-  v1p = 59.30 + 21.0*( N - Z_ )/A_ - 0.024*A_; // MeV
-  v2p = 0.007067 + 4.23e-6*A_; // MeV^(-1)
-  v3p = 1.729e-5 + 1.136e-8*A_; // MeV^(-2)
-  v4p = v4n; // MeV^(-3)
-  w1p = 14.667 + 0.009629*A_; // MeV
-  w2p = w2n; // MeV
-  d1p = 16.0 + 16.0*( N - Z_ )/A_; // MeV
-  d2p = d2n; // MeV^(-1)
-  d3p = d3n; // MeV
-  vso1p = vso1n; // MeV
-  vso2p = vso2n; // MeV^(-1)
-  wso1p = wso1n; // MeV
-  wso2p = wso2n; // MeV
-  Efp = -8.4075 + 0.01378*A_; // MeV
-  Rvp = Rvn;
-  avp = avn;
-  Rdp = Rdn;
-  adp = 0.5187 + 5.205e-4*A_; // fm
-  Rso_p = Rso_n;
-  aso_p = aso_n;
-  Rc = 1.198*A_to_the_one_third + 0.697/A_to_the_one_third
-    + 12.994*std::pow( A_to_the_one_third, -4 ); // fm
-  Vcbar_p = 1.73 * Z_ / Rc; // MeV
-
 }
 
 double marley::KoningDelarocheOpticalModel::total_cross_section(
@@ -599,4 +617,24 @@ void marley::KoningDelarocheOpticalModel::print( std::ostream& out ) const
   out << "----------------------------------------------------------\n";
   out << "  Step size = " << step_size_ << " fm\n";
   out << "----------------------------------------------------------\n";
+}
+
+marley::KoningDelarocheOpticalModel::ParamConfig::ParamConfig(
+  const marley::JSON& om_config )
+{
+  // Parse the JSON input needed to set up the optical model parameters
+  bool ok;
+  param_map_ = assign_from_json< std::map<std::string, double> >(
+    om_config, ok );
+
+  if ( !ok ) throw marley::Error( "Failed to parse optical model JSON"
+    " configuration" );
+}
+
+const double& marley::KoningDelarocheOpticalModel::ParamConfig::operator[](
+  const std::string& key ) const
+{
+  auto iter = param_map_.find( key );
+  if ( iter != param_map_.end() ) return iter->second;
+  throw marley::Error( "Missing optical model parameter '" + key + "'" );
 }

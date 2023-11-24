@@ -22,6 +22,7 @@
 #include <unordered_map>
 
 #include "marley/DecayScheme.hh"
+#include "marley/JSON.hh"
 
 namespace marley {
 
@@ -259,6 +260,10 @@ namespace marley {
       /// @brief Helper function that initializes the file index for
       /// loading nuclear structure data
       void load_structure_index();
+
+      /// @brief Storage for JSON configuration settings for optical model
+      /// parameters
+      std::map< std::string, marley::JSON > om_config_map_;
   };
 
 }

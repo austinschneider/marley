@@ -17,6 +17,8 @@
 #pragma once
 #include <cmath>
 #include <complex>
+#include <map>
+#include <string>
 #include <vector>
 
 #include "marley/DecayScheme.hh"
@@ -25,6 +27,8 @@
 #include "marley/marley_utils.hh"
 
 namespace marley {
+
+  class JSON;
 
   /// @brief Nuclear optical model for fragment emission calculations
   /// @details This class implements the global optical model potential
@@ -38,12 +42,15 @@ namespace marley {
 
     public:
 
+      /// @brief Helper class used for interpreting the JSON settings for
+      /// optical model parameters
+      class ParamConfig;
+
       /// @param Z Atomic number of the desired nuclide
       /// @param A Mass number of the desired nuclide
-      /// @param step_size Step size (fm) to use for numerical integration of
-      /// the Schr&ouml;dinger equation
-      KoningDelarocheOpticalModel( int Z, int A, double step_size
-        = DEFAULT_NUMEROV_STEP_SIZE_ );
+      /// @param om_config JSON object containing the parameter values
+      /// for the optical model calculation
+      KoningDelarocheOpticalModel( int Z, int A, const JSON& om_config );
 
       virtual std::complex< double > optical_model_potential( double r,
         double fragment_KE_lab, int fragment_pdg, int two_j, int l, int two_s,
@@ -151,6 +158,17 @@ namespace marley {
       // More helper functions
       void calculate_kinematic_variables( double KE_tot_CM, int fragment_pdg );
       void update_target_mass( int target_charge );
+  };
+
+  class KoningDelarocheOpticalModel::ParamConfig {
+    public:
+
+      ParamConfig( const JSON& om_config );
+      const double& operator[]( const std::string& key ) const;
+
+    protected:
+
+      std::map< std::string, double > param_map_;
   };
 
 }

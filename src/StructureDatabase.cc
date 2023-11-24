@@ -25,6 +25,7 @@
 #include "marley/Error.hh"
 #include "marley/FileManager.hh"
 #include "marley/Fragment.hh"
+#include "marley/JSON.hh"
 #include "marley/KoningDelarocheOpticalModel.hh"
 #include "marley/Logger.hh"
 #include "marley/StandardLorentzianModel.hh"
@@ -47,7 +48,27 @@ const std::string marley::StructureDatabase
 // been loaded
 bool marley::StructureDatabase::initialized_gs_spin_parity_table_ = false;
 
-marley::StructureDatabase::StructureDatabase() {}
+marley::StructureDatabase::StructureDatabase() {
+
+  // Instantiate the file manager and use it to find the data file containing
+  // the optical model parameter settings
+  const auto& fm = marley::FileManager::Instance();
+  const std::string om_file_name( "optical_model.js" );
+  std::string om_full_file_name = fm.find_file( om_file_name );
+
+  if ( om_full_file_name.empty() ) {
+    throw marley::Error( "Could not find the MARLEY nuclear optical model"
+      " configuration file " + om_file_name + ". Please ensure that"
+      " the folder containing it is on the MARLEY search path."
+      " If needed, the folder can be appended to the MARLEY_SEARCH_PATH"
+      " environment variable." );
+  }
+
+  MARLEY_LOG_INFO() << "Loading nuclear optical model parameters from "
+    << om_full_file_name;
+
+  om_config_map_[ "default" ] = marley::JSON::load_file( om_full_file_name );
+}
 
 void marley::StructureDatabase::add_decay_scheme(int pdg,
   std::unique_ptr<marley::DecayScheme>& ds)
@@ -190,39 +211,44 @@ marley::DecayScheme* marley::StructureDatabase::get_decay_scheme(const int Z,
 }
 
 marley::OpticalModel& marley::StructureDatabase::get_optical_model(
-  int nucleus_pid)
+  int nucleus_pid )
 {
   /// @todo add check for invalid nucleus particle ID value
-  auto iter = optical_model_table_.find(nucleus_pid);
+  auto iter = optical_model_table_.find( nucleus_pid );
 
-  if (iter == optical_model_table_.end()) {
-    // The requested level density model wasn't found, so create it and add it
-    // to the table, returning a reference to the stored level density model
+  if ( iter == optical_model_table_.end() ) {
+    // The requested optical model wasn't found, so create it and add it
+    // to the table, returning a reference to the stored optical model
     // afterwards.
-    int Z = marley_utils::get_particle_Z(nucleus_pid);
-    int A = marley_utils::get_particle_A(nucleus_pid);
-    return *(optical_model_table_.emplace(nucleus_pid,
-      std::make_unique<marley::KoningDelarocheOpticalModel>(Z, A)).first
-      ->second.get());
+    int Z = marley_utils::get_particle_Z( nucleus_pid );
+    int A = marley_utils::get_particle_A( nucleus_pid );
+    auto om_config = om_config_map_.at( "default" );
+
+    return *( optical_model_table_.emplace( nucleus_pid,
+      std::make_unique< marley::KoningDelarocheOpticalModel >(
+      Z, A, om_config) ).first->second.get() );
   }
-  else return *(iter->second.get());
+  else return *( iter->second.get() );
 }
 
 marley::OpticalModel& marley::StructureDatabase::get_optical_model(
-  const int Z, const int A)
+  const int Z, const int A )
 {
-  int nucleus_pid = marley_utils::get_nucleus_pid(Z, A);
-  auto iter = optical_model_table_.find(nucleus_pid);
+  int nucleus_pid = marley_utils::get_nucleus_pid( Z, A );
+  auto iter = optical_model_table_.find( nucleus_pid );
 
-  if (iter == optical_model_table_.end()) {
-    // The requested level density model wasn't found, so create it and add it
-    // to the table, returning a reference to the stored level density model
+  if ( iter == optical_model_table_.end() ) {
+
+    auto om_config = om_config_map_.at( "default" );
+
+    // The requested optical model wasn't found, so create it and add it
+    // to the table, returning a reference to the stored optical model
     // afterwards.
-    return *(optical_model_table_.emplace(nucleus_pid,
-      std::make_unique<marley::KoningDelarocheOpticalModel>(Z, A)).first
-      ->second.get());
+    return *( optical_model_table_.emplace( nucleus_pid,
+      std::make_unique< marley::KoningDelarocheOpticalModel >(
+      Z, A, om_config) ).first->second.get() );
   }
-  else return *(iter->second.get());
+  else return *( iter->second.get() );
 }
 
 marley::LevelDensityModel& marley::StructureDatabase::get_level_density_model(
