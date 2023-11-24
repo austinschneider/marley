@@ -30,20 +30,28 @@ namespace marley {
   /// appropriate.
   /// @todo Create an MARLEY exception class hierarchy as needed.
   class Error : public std::exception {
+
     public:
+
       /// @param message
       /// An error message to display if the exception is not caught
-      inline explicit Error(const char* message) : msg_(message)
-        { if (log_them_) MARLEY_LOG_ERROR() << msg_; }
+      inline explicit Error( const char* message ) : msg_(message)
+        { if ( log_them_ ) MARLEY_LOG_ERROR() << msg_; }
+
       /// @param message
       /// An error message to display if the exception is not caught
-      inline explicit Error(const std::string& message) : msg_(message)
-        { if (log_them_) MARLEY_LOG_ERROR() << msg_; }
+      inline explicit Error( const std::string& message ) : msg_(message)
+        { if ( log_them_ ) MARLEY_LOG_ERROR() << msg_; }
+
       inline virtual ~Error() {}
+
       /// Method called by the C++ standard library to display the error message
       inline virtual const char* what() const noexcept { return msg_.c_str(); }
+
       /// Sets whether or not error messages should be printed to the Logger
-      inline static void set_logging_status(bool do_log) { log_them_ = do_log; }
+      inline static void set_logging_status( bool do_log )
+        { log_them_ = do_log; }
+
       /// Returns whether or not error messages will be printed to the Logger
       inline static bool logging_status() { return log_them_; }
 
