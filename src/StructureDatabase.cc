@@ -14,8 +14,6 @@
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
-
-
 // Standard library includes
 #include <array>
 
@@ -32,8 +30,12 @@
 #include "marley/StructureDatabase.hh"
 #include "marley/TargetAtom.hh"
 
-// Define static data members of the StructureDatabase class
+namespace {
+  /// @brief JSON key for lookup of the default optical model parameters
+  const std::string DEFAULT_OM_KEY( "Default" );
+}
 
+// Define static data members of the StructureDatabase class
 std::map< int, std::pair<int, marley::Parity> >
   marley::StructureDatabase::jpi_table_;
 
@@ -48,30 +50,10 @@ const std::string marley::StructureDatabase
 // been loaded
 bool marley::StructureDatabase::initialized_gs_spin_parity_table_ = false;
 
-marley::StructureDatabase::StructureDatabase() {
+marley::StructureDatabase::StructureDatabase() {}
 
-  // Instantiate the file manager and use it to find the data file containing
-  // the optical model parameter settings
-  const auto& fm = marley::FileManager::Instance();
-  const std::string om_file_name( "optical_model.js" );
-  std::string om_full_file_name = fm.find_file( om_file_name );
-
-  if ( om_full_file_name.empty() ) {
-    throw marley::Error( "Could not find the MARLEY nuclear optical model"
-      " configuration file " + om_file_name + ". Please ensure that"
-      " the folder containing it is on the MARLEY search path."
-      " If needed, the folder can be appended to the MARLEY_SEARCH_PATH"
-      " environment variable." );
-  }
-
-  MARLEY_LOG_INFO() << "Loading nuclear optical model parameters from "
-    << om_full_file_name;
-
-  om_config_map_[ "default" ] = marley::JSON::load_file( om_full_file_name );
-}
-
-void marley::StructureDatabase::add_decay_scheme(int pdg,
-  std::unique_ptr<marley::DecayScheme>& ds)
+void marley::StructureDatabase::add_decay_scheme( int pdg,
+  std::unique_ptr<marley::DecayScheme>& ds )
 {
   auto* temp_ptr = ds.release();
   decay_scheme_table_.emplace(pdg, std::unique_ptr<marley::DecayScheme>(temp_ptr));
@@ -222,7 +204,9 @@ marley::OpticalModel& marley::StructureDatabase::get_optical_model(
     // afterwards.
     int Z = marley_utils::get_particle_Z( nucleus_pid );
     int A = marley_utils::get_particle_A( nucleus_pid );
-    auto om_config = om_config_map_.at( "default" );
+
+    if ( om_config_map_.empty() ) this->load_optical_model_params();
+    auto om_config = om_config_map_.at( DEFAULT_OM_KEY );
 
     return *( optical_model_table_.emplace( nucleus_pid,
       std::make_unique< marley::KoningDelarocheOpticalModel >(
@@ -239,7 +223,8 @@ marley::OpticalModel& marley::StructureDatabase::get_optical_model(
 
   if ( iter == optical_model_table_.end() ) {
 
-    auto om_config = om_config_map_.at( "default" );
+    if ( om_config_map_.empty() ) this->load_optical_model_params();
+    auto om_config = om_config_map_.at( DEFAULT_OM_KEY );
 
     // The requested optical model wasn't found, so create it and add it
     // to the table, returning a reference to the stored optical model
@@ -440,4 +425,41 @@ void marley::StructureDatabase::load_structure_index() {
   // Avoid duplicate loading of the structure index by setting the
   // "already loaded" flag
   loaded_structure_index_ = true;
+}
+
+void marley::StructureDatabase::load_optical_model_params(
+  const marley::JSON* om_config )
+{
+  // Boolean flag for checking that JSON parsing was successful
+  bool ok;
+
+  // If we've been passed a JSON configuration, then use it
+  if ( om_config ) {
+    om_config_map_ = assign_from_json< std::map<std::string, marley::JSON> >(
+      *om_config, ok );
+  }
+  // Otherwise, fetch the default one from the standard data file
+  else {
+    const auto& fm = marley::FileManager::Instance();
+    const std::string om_file_name( "optical_model.js" );
+    std::string om_full_file_name = fm.find_file( om_file_name );
+
+    if ( om_full_file_name.empty() ) {
+      throw marley::Error( "Could not find the MARLEY nuclear optical model"
+        " configuration file " + om_file_name + ". Please ensure that"
+        " the folder containing it is on the MARLEY search path."
+        " If needed, the folder can be appended to the MARLEY_SEARCH_PATH"
+        " environment variable." );
+    }
+
+    MARLEY_LOG_INFO() << "Loading nuclear optical model parameters from "
+      << om_full_file_name;
+
+    auto temp_config = marley::JSON::load_file( om_full_file_name );
+    om_config_map_ = assign_from_json< std::map<std::string, marley::JSON> >(
+      temp_config, ok );
+  }
+
+  if ( !ok ) throw marley::Error( "Failed to parse optical model"
+    " JSON configuration" );
 }

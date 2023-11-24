@@ -1085,6 +1085,13 @@ template<typename T> struct IsMappish< T, std::void_t< typename T::key_type,
 template < typename T > bool convert_json( const marley::JSON& json,
   T& result )
 {
+  // Allow a trivial conversion to JSON itself (handy for populating a
+  // container of JSON objects via recursive use of this function)
+  if constexpr ( std::is_same_v< marley::JSON, T > ) {
+    result = json;
+    return true;
+  }
+
   // This option includes both integers and boolean types, so we need to
   // explicitly distinguish between them
   if constexpr ( std::is_integral_v< T > ) {

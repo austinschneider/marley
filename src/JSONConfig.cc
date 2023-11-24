@@ -445,13 +445,24 @@ void marley::JSONConfig::prepare_reactions( marley::Generator& gen ) const {
 
 void marley::JSONConfig::prepare_structure( marley::Generator& gen ) const
 {
+  auto& sdb = gen.get_structure_db();
+
+  // Check for a custom configuration of nuclear optical model parameters.
+  // If the user asked for one, use it instead of the default settings.
+  const std::string om_key = "opt_mod";
+  if ( json_.has_key(om_key) ) {
+    const marley::JSON om_config = json_.at( om_key );
+    MARLEY_LOG_INFO() << "Loading custom optical model configuration";
+    MARLEY_LOG_DEBUG() << om_config.dump_string();
+
+    sdb.load_optical_model_params( &om_config );
+  }
+
   // If the user specified a non-default value of either the
   // maximum orbital angular momentum or the maximum multipolarity
   // to consider when simulating decays to the continuum, set
   // the appropriate member variable of the StructureDatabase
   // object owned by the Generator
-
-  auto& sdb = gen.get_structure_db();
 
   std::string flmax_key( "fragment_lmax" );
   if ( json_.has_key(flmax_key) ) {

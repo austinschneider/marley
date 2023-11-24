@@ -187,6 +187,10 @@ namespace marley {
       static void get_gs_spin_parity(const int Z, const int A, int& twoJ,
         marley::Parity& Pi);
 
+      /// @brief Helper function that initializes the map of JSON settings
+      /// for the optical model parameters
+      void load_optical_model_params( const marley::JSON* om_config = nullptr );
+
     private:
 
       /// @brief Lookup table for marley::DecayScheme objects.
