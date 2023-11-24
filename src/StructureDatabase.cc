@@ -206,7 +206,19 @@ marley::OpticalModel& marley::StructureDatabase::get_optical_model(
     int A = marley_utils::get_particle_A( nucleus_pid );
 
     if ( om_config_map_.empty() ) this->load_optical_model_params();
-    auto om_config = om_config_map_.at( DEFAULT_OM_KEY );
+
+    // Check for a nucleus-specific optical model configuration (stored under
+    // the nuclear PDG code as a string key) first. If it's not present, pull
+    // up the default set of parameters. If the default set isn't present,
+    // complain.
+    auto iter = om_config_map_.find( std::to_string(nucleus_pid) );
+    if ( iter == om_config_map_.end() ) {
+      iter = om_config_map_.find( DEFAULT_OM_KEY );
+      if ( iter == om_config_map_.end() ) throw marley::Error( "Missing '"
+        + DEFAULT_OM_KEY + "' key in optical model JSON configuration" );
+    }
+
+    const auto& om_config = iter->second;
 
     return *( optical_model_table_.emplace( nucleus_pid,
       std::make_unique< marley::KoningDelarocheOpticalModel >(
@@ -224,7 +236,19 @@ marley::OpticalModel& marley::StructureDatabase::get_optical_model(
   if ( iter == optical_model_table_.end() ) {
 
     if ( om_config_map_.empty() ) this->load_optical_model_params();
-    auto om_config = om_config_map_.at( DEFAULT_OM_KEY );
+
+    // Check for a nucleus-specific optical model configuration (stored under
+    // the nuclear PDG code as a string key) first. If it's not present, pull
+    // up the default set of parameters. If the default set isn't present,
+    // complain.
+    auto iter = om_config_map_.find( std::to_string(nucleus_pid) );
+    if ( iter == om_config_map_.end() ) {
+      iter = om_config_map_.find( DEFAULT_OM_KEY );
+      if ( iter == om_config_map_.end() ) throw marley::Error( "Missing '"
+        + DEFAULT_OM_KEY + "' key in optical model JSON configuration" );
+    }
+
+    const auto& om_config = iter->second;
 
     // The requested optical model wasn't found, so create it and add it
     // to the table, returning a reference to the stored optical model
