@@ -72,6 +72,18 @@ void marley::HauserFeshbachDecay::build_exit_channels(
     int Af = Ai - f.get_A(); // mass number
     int pdg_final = marley_utils::get_nucleus_pid( Zf, Af );
 
+    // If the final proton number goes negative or the final nucleon number is
+    // zero or less, then we won't have a valid decay, so just move on if
+    // either of those is the case.
+    if ( Zf < 0 || Af < 1 ) continue;
+
+    // Avoid remnants consisting only of multiple neutrons
+    if ( Zf == 0 && Af > 1 ) continue;
+
+    // Don't emit fragments with a higher mass number than the residue itself.
+    // This is already covered by swapping the residue/fragment roles.
+    if ( f.get_A() > Af ) continue;
+
     // Approximate the ground state mass of the ion formed when the fragment f
     // is emitted by adding (Za - qi) electron masses to the atomic mass for
     // the final nucleus.
