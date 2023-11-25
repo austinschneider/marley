@@ -139,6 +139,9 @@ void marley::FragmentDiscreteExitChannel::compute_total_width() {
       }
     }
   }
+
+  // Guard against numerical issues by capping the total width at zero
+  width_ = std::max( 0., width_ );
 }
 
 double marley::GammaExitChannel::gamma_energy( double Exf ) const {
@@ -208,6 +211,9 @@ void marley::GammaDiscreteExitChannel::compute_total_width() {
 
     width_ += term;
   }
+
+  // Guard against numerical issues by capping the total width at zero
+  width_ = std::max( 0., width_ );
 }
 
 double marley::FragmentContinuumExitChannel::differential_width( double Exf,
@@ -299,6 +305,9 @@ void marley::ContinuumExitChannel::compute_total_width() {
   // Numerically integrate over the bounds of the continuum using the
   // function object prepared above
   width_ = marley_utils::num_integrate( dw, E_c_min_, Ec_max );
+
+  // Guard against numerical issues by capping the total width at zero
+  width_ = std::max( 0., width_ );
 
   // TODO: consider switching to doing the integration with a
   // ChebyshevInterpolatingFunction object. This avoids needing to create one
