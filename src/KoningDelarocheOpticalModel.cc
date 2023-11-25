@@ -50,7 +50,7 @@ marley::KoningDelarocheOpticalModel::KoningDelarocheOpticalModel( int Z,
   v2n = om["vn20"] - om["vn2A"]*A_; // MeV^(-1)
   v3n = om["vn30"] - om["vn3A"]*A_; // MeV^(-2)
   v4n = om["v40"]; // MeV^(-3)
-  w1n = om["wn10"] - om["wn1A"]*A_; // MeV
+  w1n = om["wn10"] + om["wn1A"]*A_; // MeV
   w2n = om["w20"] + om["w2A"]*A_; // MeV
   d1n = om["d10"] - om["d1alpha"]*alpha; // MeV
   d2n = om["d20"] + om["d2A"]/( 1. + std::exp(
