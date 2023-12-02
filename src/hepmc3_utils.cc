@@ -194,6 +194,19 @@ namespace marley_hepmc3 {
     return found_particles;
   }
 
+  std::vector< std::shared_ptr< HepMC3::GenVertex > >
+    get_vertices_with_status( int status, HepMC3::GenEvent& ev )
+  {
+    const auto& vertices = ev.vertices();
+    std::vector< std::shared_ptr< HepMC3::GenVertex > > found_vertices;
+    for ( auto& v : vertices ) {
+      if ( v->status() == status ) {
+        found_vertices.push_back( v );
+      }
+    }
+    return found_vertices;
+  }
+
   std::shared_ptr< HepMC3::GenParticle >
     get_first_particle_with_status( int status, HepMC3::GenEvent& ev )
   {

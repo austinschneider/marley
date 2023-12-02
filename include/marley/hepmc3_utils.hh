@@ -100,6 +100,9 @@ namespace marley_hepmc3 {
     int pdg, int status, double mass = DUMMY_PARTICLE_MASS );
 
 
+  std::vector< std::shared_ptr< HepMC3::GenVertex > >
+    get_vertices_with_status( int status, HepMC3::GenEvent& ev );
+
   std::vector< std::shared_ptr< HepMC3::GenParticle > >
     get_particles_with_status( int status, HepMC3::GenEvent& ev );
 
