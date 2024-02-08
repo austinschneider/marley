@@ -74,8 +74,8 @@ namespace marley_hepmc3 {
   constexpr int NUHEPMC_FINAL_STATE_STATUS = 1;
   constexpr int NUHEPMC_PROJECTILE_STATUS = 4;
   constexpr int NUHEPMC_TARGET_STATUS = 20;
-  constexpr int NUHEPMC_UNDECAYED_RESIDUE_STATUS = 22;
-  constexpr int NUHEPMC_INTERMEDIATE_RESIDUE_STATUS = 23;
+  constexpr int NUHEPMC_UNDECAYED_RESIDUE_STATUS = 27;
+  constexpr int NUHEPMC_INTERMEDIATE_RESIDUE_STATUS = 28;
 
   constexpr double DUMMY_PARTICLE_MASS
     = std::numeric_limits< double >::lowest();
