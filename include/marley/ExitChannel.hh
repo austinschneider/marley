@@ -52,7 +52,7 @@ namespace marley {
       /// for decay widths in this exit channel.
       /// @param sdb Reference to the StructureDatabase that will be used
       /// in decay width calculations by this ExitChannel object
-      ExitChannel(int pdgi, int qi, double Exi, int twoJi, marley::Parity Pi,
+      ExitChannel( int pdgi, int qi, double Exi, int twoJi, marley::Parity Pi,
         double rho_i, marley::StructureDatabase& sdb ) : pdgi_( pdgi ),
         qi_( qi ), Exi_( Exi ), twoJi_( twoJi ), Pi_( Pi ), sdb_( &sdb )
       {
@@ -92,11 +92,11 @@ namespace marley {
       /// an iterator to the ExitChannel's width_ member variable.
       /// @details This is used to load a std::discrete_distribution with decay
       /// widths for sampling without redundant storage.
-      template<typename It> static inline
-        marley::IteratorToPointerMember<It, double> make_width_iterator(It it)
+      template< typename It > static inline
+        marley::IteratorToPointerMember< It, double > make_width_iterator(It it)
       {
-        return marley::IteratorToPointerMember<It,
-          double>(it, &marley::ExitChannel::width_);
+        return marley::IteratorToPointerMember< It,
+          double >( it, &marley::ExitChannel::width_ );
       }
 
       /// @brief Get the total decay width into this channel (MeV)
@@ -147,7 +147,8 @@ namespace marley {
       /// Initial nuclear parity @f$ \Pi @f$
       marley::Parity Pi_;
 
-      /// Normalization factor needed so that the decay widths have correct units
+      /// Normalization factor needed so that the decay widths have correct
+      /// units
       /// @details This factor is equal to @f$ \left[ 2\pi\rho(E_x, J, \Pi)
       /// \right]^{-1} @f$ where @f$\rho@f$ is the initial nuclear level density
       /// (MeV<sup> -1</sup>) in the vicinity of the initial nuclear level. This
@@ -195,7 +196,7 @@ namespace marley {
     public:
 
       /// @param fragment Fragment emitted in this exit channel
-      FragmentExitChannel(const marley::Fragment& fragment)
+      FragmentExitChannel( const marley::Fragment& fragment )
         : fragment_pdg_( fragment.get_pid() ) {}
 
       virtual int emitted_particle_pdg() const final override
@@ -256,7 +257,7 @@ namespace marley {
       /// @param lmax The maximum value of the orbital angular momentum
       /// (multipolarity) @f$ \ell @f$ to consider when computing differential
       /// decay widths for fragment (gamma-ray) emission to the continuum
-      ContinuumExitChannel(double Ec_min, int lmax) : E_c_min_( Ec_min ),
+      ContinuumExitChannel( double Ec_min, int lmax ) : E_c_min_( Ec_min ),
         l_max_( lmax ) {}
 
       /// Helper function that initializes the width_ member variable upon
@@ -279,7 +280,7 @@ namespace marley {
       /// nuclear spin-parity value in do_decay()
       /// @details The skipping functionality should only be used for testing
       /// purposes!
-      inline void set_skip_jpi_sampling(bool skip_it) const
+      inline void set_skip_jpi_sampling( bool skip_it ) const
         { skip_jpi_sampling_ = skip_it; }
 
       /// @brief A spin-parity value with its corresponding partial decay width
@@ -290,18 +291,18 @@ namespace marley {
         /// @param twoJ Two times the nuclear spin
         /// @param p Nuclear parity
         /// @param w Partial decay width (MeV) for the given spin-parity
-        SpinParityWidth(int twoJ, marley::Parity p, double w)
-          : twoJf(twoJ), Pf(p), diff_width(w) {}
+        SpinParityWidth( int twoJ, marley::Parity p, double w )
+          : twoJf( twoJ ), Pf( p ), diff_width( w ) {}
 
         int twoJf; ///< Final nuclear spin
         marley::Parity Pf; ///< Final nuclear parity
         double diff_width; ///< Partial differential decay width (MeV)
       };
 
-      double sample_Exf(marley::Generator& gen) const;
+      double sample_Exf( marley::Generator& gen ) const;
 
-      void sample_spin_parity(double Exf, int& two_Jf, marley::Parity& Pf,
-        marley::Generator& gen) const;
+      void sample_spin_parity( double Exf, int& two_Jf, marley::Parity& Pf,
+        marley::Generator& gen ) const;
 
       /// @brief Returns the minimum excitation energy bound for the continuum
       inline double E_c_min() const { return E_c_min_; }
@@ -309,6 +310,10 @@ namespace marley {
       /// @brief Returns the maximum accessible excitation energy to be
       /// used when integrating over the continuum
       virtual double E_c_max() const = 0;
+
+      /// @brief Returns a pointer to the last sampled SpinParityWidth object
+      inline const SpinParityWidth* get_last_sampled_spw() const
+        { return last_sampled_spw_; }
 
     protected:
 
@@ -321,7 +326,7 @@ namespace marley {
 
       /// @brief Table of possible final-state spin-parities together
       /// with their partial differential decay widths
-      mutable std::vector<SpinParityWidth> jpi_widths_table_;
+      mutable std::vector< SpinParityWidth > jpi_widths_table_;
 
       /// @brief Flag that allows skipping the sampling of a final
       /// nuclear spin-parity (useful only for testing purposes)
@@ -332,6 +337,14 @@ namespace marley {
       /// @details This pointer will be initialized lazily during the
       /// first call to do_decay()
       mutable std::unique_ptr<marley::ChebyshevInterpolatingFunction> Exf_cdf_;
+
+      /// @brief Points to the last SpinParityWidth object sampled in
+      /// a previous call to sample_spin_parity()
+      mutable SpinParityWidth* last_sampled_spw_ = nullptr;
+
+      /// @brief Helper function that resets the table of SpinParityWidth
+      /// objects
+      void clear_jpi_widths() const;
   };
 
   /// @brief %Fragment emission ExitChannel that leads to a discrete nuclear

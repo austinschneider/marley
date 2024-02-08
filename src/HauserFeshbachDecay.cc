@@ -207,8 +207,9 @@ void marley::HauserFeshbachDecay::build_exit_channels(
   }
 }
 
-bool marley::HauserFeshbachDecay::do_decay( double& Exf, int& twoJf,
-  marley::Parity& Pf, std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
+const marley::ExitChannel& marley::HauserFeshbachDecay::do_decay(
+  double& Exf, int& twoJf, marley::Parity& Pf,
+  std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
   std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
   int& qIon, marley::Generator& gen )
 {
@@ -217,8 +218,7 @@ bool marley::HauserFeshbachDecay::do_decay( double& Exf, int& twoJf,
   ec->do_decay( Exf, twoJf, Pf, compound_nucleus_, emitted_particle,
     residual_nucleus, qIon, gen );
 
-  bool discrete_level = !ec->is_continuum();
-  return !discrete_level;
+  return *ec;
 }
 
 void marley::HauserFeshbachDecay::print(std::ostream& out) const {

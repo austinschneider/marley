@@ -152,7 +152,13 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
         MARLEY_LOG_DEBUG() << hfd;
 
         int q_second;
-        continuum = hfd.do_decay( Ex, twoJ, P, first, second, q_second, gen );
+        const auto& exit_channel = hfd.do_decay( Ex, twoJ, P, first, second,
+          q_second, gen );
+
+        continuum = exit_channel.is_continuum();
+
+        double width_tot = hfd.total_width();
+        double width_ec = exit_channel.width();
 
         MARLEY_LOG_DEBUG() << "Hauser-Feshbach decay to " << first->pid()
           << " and " << second->pid();
@@ -173,7 +179,42 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
         // to the parent event (through the decay vertex)
         marley_hepmc3::set_particle_charge( *second, q_second );
 
+        // We can also now set the attributes representing the daughter ion's
+        // excitation energy, spin, and parity
+        second->add_attribute( "Ex",
+          std::make_shared< HepMC3::DoubleAttribute >(Ex) );
+        second->add_attribute( "twoJ",
+          std::make_shared< HepMC3::IntAttribute >(twoJ) );
+        second->add_attribute( "parity",
+          std::make_shared< HepMC3::IntAttribute >(static_cast<int>( P )) );
+
+        // The daughter ion now takes the role of the residue for the next loop
+        // iteration
         residue.swap( second );
+
+        // Store some information about the total and partial widths of
+        // the simulated compound nucleus decay in attributes attached to
+        // the decay vertex
+        decay_vtx->add_attribute( "TotalWidth",
+          std::make_shared< HepMC3::DoubleAttribute >(width_tot) );
+
+        decay_vtx->add_attribute( "ECWidth",
+          std::make_shared< HepMC3::DoubleAttribute >(width_ec) );
+
+        // In the case of a transition to the continuum, also store the partial
+        // differential width for the chosen spin-parity of the daughter
+        // nucleus
+        if ( continuum ) {
+          const auto& cec = dynamic_cast< const marley::ContinuumExitChannel& >(
+            exit_channel );
+
+          const auto* spw_ptr = cec.get_last_sampled_spw();
+          double width_sp = spw_ptr->diff_width;
+
+          decay_vtx->add_attribute( "SPWidth",
+            std::make_shared< HepMC3::DoubleAttribute >(width_sp) );
+        }
+
       }
     }
 

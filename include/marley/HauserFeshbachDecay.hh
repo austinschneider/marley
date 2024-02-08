@@ -55,11 +55,13 @@ namespace marley {
       /// final-state nucleus (ion)
       /// @param[out] qIon Charge (in units of the elementary charge)
       /// of the residual nucleus (ion)
-      /// param gen Generator to use for random sampling
-      bool do_decay( double& Exf, int& twoJf, marley::Parity& Pf,
-        std::shared_ptr< HepMC3::GenParticle >& emitted_particle,
-        std::shared_ptr< HepMC3::GenParticle >& residual_nucleus,
-        int& qIon, marley::Generator& gen );
+      /// @param gen Generator to use for random sampling
+      /// @return The ExitChannel object that was chosen while simulating the
+      /// decay
+      const marley::ExitChannel& do_decay( double& Exf, int& twoJf,
+        marley::Parity& Pf, std::shared_ptr< HepMC3::GenParticle >&
+        emitted_particle, std::shared_ptr< HepMC3::GenParticle >&
+        residual_nucleus, int& qIon, marley::Generator& gen );
 
       /// @brief Print information about the possible decay channels to a
       /// std::ostream
@@ -77,8 +79,10 @@ namespace marley {
 
       /// @brief Helper function for do_decay(). Samples an ExitChannel
       /// using the partial decay widths as weights
-      const std::unique_ptr<marley::ExitChannel>& sample_exit_channel(
-        marley::Generator& gen) const;
+      const std::unique_ptr< marley::ExitChannel >& sample_exit_channel(
+        marley::Generator& gen ) const;
+
+      inline double total_width() const;
 
     private:
 
@@ -102,11 +106,14 @@ namespace marley {
   };
 
   // Inline function definitions
-  inline std::vector<std::unique_ptr<marley::ExitChannel> >&
+  inline std::vector< std::unique_ptr<marley::ExitChannel> >&
     HauserFeshbachDecay::exit_channels() { return exit_channels_; }
 
-  inline const std::vector<std::unique_ptr<marley::ExitChannel> >&
+  inline const std::vector< std::unique_ptr<marley::ExitChannel> >&
     HauserFeshbachDecay::exit_channels() const { return exit_channels_; }
+
+  inline double HauserFeshbachDecay::total_width() const
+    { return total_width_; }
 }
 
 /// @brief Operator for printing a HauserFeshbachDecay object to a std::ostream

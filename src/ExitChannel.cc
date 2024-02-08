@@ -219,7 +219,7 @@ void marley::GammaDiscreteExitChannel::compute_total_width() {
 double marley::FragmentContinuumExitChannel::differential_width( double Exf,
   bool store_jpi_widths ) const
 {
-  if ( store_jpi_widths ) jpi_widths_table_.clear();
+  if ( store_jpi_widths ) this->clear_jpi_widths();
 
   int remnant_pdg = this->final_nucleus_pdg();
   marley::OpticalModel& om = sdb_->get_optical_model( remnant_pdg );
@@ -317,7 +317,7 @@ void marley::ContinuumExitChannel::compute_total_width() {
 double marley::GammaContinuumExitChannel::differential_width( double Exf,
   bool store_jpi_widths ) const
 {
-  if ( store_jpi_widths ) jpi_widths_table_.clear();
+  if ( store_jpi_widths ) this->clear_jpi_widths();
 
   auto& ldm = sdb_->get_level_density_model( pdgi_ );
   auto& gsfm = sdb_->get_gamma_strength_function_model( pdgi_ );
@@ -483,7 +483,7 @@ void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,
   marley::Parity& Pi, marley::Generator& gen) const
 {
   // Clear any previous table entries of spin-parities and decay widths
-  jpi_widths_table_.clear();
+  this->clear_jpi_widths();
 
   // Load table of partial differential widths via a call to
   // differential_width()
@@ -509,7 +509,12 @@ void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,
   size_t jpi_index = gen.sample_from_distribution( jpi_dist );
 
   // Store the results
-  const SpinParityWidth& Jpi = jpi_widths_table_.at( jpi_index );
-  twoJ = Jpi.twoJf;
-  Pi = Jpi.Pf;
+  last_sampled_spw_ = &jpi_widths_table_.at( jpi_index );
+  twoJ = last_sampled_spw_->twoJf;
+  Pi = last_sampled_spw_->Pf;
+}
+
+void marley::ContinuumExitChannel::clear_jpi_widths() const {
+  jpi_widths_table_.clear();
+  last_sampled_spw_ = nullptr;
 }
