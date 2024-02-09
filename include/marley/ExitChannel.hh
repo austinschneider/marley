@@ -315,6 +315,10 @@ namespace marley {
       inline const SpinParityWidth* get_last_sampled_spw() const
         { return last_sampled_spw_; }
 
+      /// @brief Grants const access to the vector of SpinParityWidth objects
+      inline const std::vector< SpinParityWidth >& get_spw_table() const
+        { return jpi_widths_table_; }
+
     protected:
 
       /// Minimum accessible nuclear excitation energy (MeV) in the continuum
