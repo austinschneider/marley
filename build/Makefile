@@ -241,13 +241,14 @@ Please ensure that the HepMC3-config executable is on your PATH and try again.
       USE_ROOT = yes
       ROOT_OBJ_DICT = marley_root_dict.o
 
-      # If we're linking against ROOT, then we need to move the
-      # OutputFile.o object from the MARLEY library to the MARLEY_ROOT
-      # library
-      OBJECTS := $(filter-out OutputFile.o, $(OBJECTS))
+      # If we're linking against ROOT, then we need to move the OutputFile.o
+      # and OutputFileAscii.o objects from the MARLEY library to the
+      # MARLEY_ROOT library
+      OBJECTS := $(filter-out OutputFile.o OutputFileAscii.o, $(OBJECTS))
 
       ROOT_SHARED_LIB_LDFLAGS := -l$(ROOT_SHARED_LIB_NAME)
       ROOT_SHARED_LIB_OBJECTS = marley_root.o RootJSONConfig.o OutputFile.o
+      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o
       #ROOT_SHARED_LIB_OBJECTS += RootOutputFile.o
       #ROOT_SHARED_LIB_OBJECTS += RootEventFileReader.o MacroEventFileReader.o
       #ROOT_SHARED_LIB_OBJECTS += $(ROOT_OBJ_DICT)
