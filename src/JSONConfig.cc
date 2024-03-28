@@ -25,6 +25,7 @@
 #include "marley/marley_utils.hh"
 #include "marley/Error.hh"
 #include "marley/FileManager.hh"
+#include "marley/FormFactor.hh"
 #include "marley/JSONConfig.hh"
 #include "marley/NeutrinoSource.hh"
 #include "marley/NuclearReaction.hh"
@@ -40,6 +41,7 @@ using InterpMethod = marley::InterpolationGrid<double>::InterpolationMethod;
 using ProcType = marley::Reaction::ProcessType;
 using CMode = marley::CoulombCorrector::CoulombMode;
 using CRPADiscreteMode = marley::Generator::CRPADiscreteMode;
+using FFScalingMode = marley::FormFactor::FFScalingMode;
 
 // anonymous namespace for helper functions, etc.
 namespace {
@@ -172,6 +174,20 @@ marley::Generator marley::JSONConfig::create_generator() const
       ::coulomb_mode_from_string( my_mode );
   }
 
+  // Set the way the form factors depend on Q^2 in all reactions.
+  FFScalingMode ff_scaling_mode = FFScalingMode::FLAT; // Default mode
+  if ( json_.has_key("ff_scaling_mode") ) {
+    const auto& ffmode = json_.at( "ff_scaling_mode" );
+    if ( !ffmode.is_string() ) throw marley::Error("Invalid form factor"
+      " scaling mode specification " + ffmode.dump_string() );
+    std::string my_mode = ffmode.to_string();
+    ff_scaling_mode = marley::FormFactor
+      ::ff_scaling_mode_from_string( my_mode );
+  }
+  // Inform the user about the set form factor scaling mode
+  MARLEY_LOG_INFO() << "Configured form factor scaling mode: " << marley::FormFactor::string_from_ff_scaling_mode( ff_scaling_mode );
+
+
   // Turn off calls to Generator::normalize_E_pdf() until we
   // have set up all the needed pieces
   gen.dont_normalize_E_pdf_ = true;
@@ -180,7 +196,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   prepare_direction( gen );
   prepare_structure( gen );
   prepare_neutrino_source( gen );
-  prepare_reactions( gen, coulomb_mode );
+  prepare_reactions( gen, coulomb_mode, ff_scaling_mode );
   prepare_target( gen );
   prepare_weights( gen );
 
@@ -200,7 +216,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   // Save a copy of the JSON settings used to configure the generator
   gen.set_json_config( json_ );
 
-  // @Pablo: Set the flag to specify how to deal with CRPA strength
+  // Set the flag to specify how to deal with CRPA strength
   // leaking below the unbound threshold
   //
   // Ignore by default
@@ -374,7 +390,7 @@ void marley::JSONConfig::prepare_direction( marley::Generator& gen ) const {
 }
 
 void marley::JSONConfig::prepare_reactions( marley::Generator& gen,
-  CMode coulomb_mode ) const
+  CMode coulomb_mode, FFScalingMode ff_scaling_mode ) const
 {
   const auto& fm = marley::FileManager::Instance();
 
@@ -413,7 +429,7 @@ void marley::JSONConfig::prepare_reactions( marley::Generator& gen,
           }
 
           auto reacts = marley::Reaction::load_from_file(
-            full_file_name, gen.get_structure_db(), coulomb_mode );
+            full_file_name, gen.get_structure_db(), coulomb_mode, ff_scaling_mode );
 
           if ( reacts.empty() ) throw marley::Error( "Failed to load"
             " any reactions from the file " + full_file_name + ". Please"
