@@ -213,8 +213,28 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
 
           decay_vtx->add_attribute( "SPWidth",
             std::make_shared< HepMC3::DoubleAttribute >(width_sp) );
-        }
 
+          bool is_fragment_emission = exit_channel.emits_fragment();
+
+          if ( is_fragment_emission ) {
+            const auto* f_spw = static_cast< const marley
+              ::FragmentContinuumExitChannel::FragmentSpinParityWidth* >(
+              spw_ptr );
+
+            decay_vtx->add_attribute( "two_j_frag",
+              std::make_shared< HepMC3::IntAttribute >(f_spw->two_j_frag) );
+            decay_vtx->add_attribute( "orb_l",
+              std::make_shared< HepMC3::IntAttribute >(f_spw->orb_l) );
+          }
+          else {
+            // Gamma-ray emission in the continuum
+            const auto* g_spw = static_cast< const marley
+              ::GammaContinuumExitChannel::GammaSpinParityWidth* >( spw_ptr );
+
+            decay_vtx->add_attribute( "multipolarity",
+              std::make_shared< HepMC3::IntAttribute >(g_spw->multipolarity) );
+          }
+        }
       }
     }
 
