@@ -275,7 +275,9 @@ double marley::FragmentContinuumExitChannel::differential_width( double Exf,
         diff_width += term;
 
         if ( store_jpi_widths ) {
-          jpi_widths_table_.emplace_back( twoJf, Pf, term );
+          jpi_widths_table_.push_back(
+            FragmentSpinParityWidth( twoJf, Pf, term, two_j, l )
+          );
           // TODO: include (l, two_j) in cached term
         }
       }
@@ -365,8 +367,9 @@ double marley::GammaContinuumExitChannel::differential_width( double Exf,
         double term = one_over_two_pi_rho_i_ * Txl * rho_f;
 
         if ( store_jpi_widths ) {
-          jpi_widths_table_.emplace_back( twoJf, Pf, term );
-          // TODO: include Xl in cached values
+          jpi_widths_table_.push_back( GammaContinuumExitChannel
+            ::GammaSpinParityWidth( twoJf, Pf, term, mpol )
+          );
         }
 
         diff_width += term;

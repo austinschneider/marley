@@ -402,6 +402,21 @@ namespace marley {
   {
     public:
 
+      struct FragmentSpinParityWidth :
+        public ContinuumExitChannel::SpinParityWidth
+      {
+        /// @param twoJ Two times the nuclear spin
+        /// @param p Nuclear parity
+        /// @param w Partial decay width (MeV) for the given spin-parity
+        FragmentSpinParityWidth( int twoJ, marley::Parity p, double w,
+          int two_j_fr, int ell )
+          : SpinParityWidth( twoJ, p, w ), two_j_frag( two_j_fr ),
+          orb_l( ell ) {}
+
+        int two_j_frag; ///< Two times the fragment total angular momentum
+        int orb_l; ///< Orbital angular momentum
+      };
+
       /// @copydoc marley::ExitChannel::ExitChannel()
       /// @copydoc marley::ContinuumExitChannel( double, int )
       /// @copydoc marley::FragmentExitChannel( const marley::Fragment& )
@@ -428,6 +443,18 @@ namespace marley {
     public GammaExitChannel
   {
     public:
+
+      struct GammaSpinParityWidth :
+        public ContinuumExitChannel::SpinParityWidth
+      {
+        /// @param twoJ Two times the nuclear spin
+        /// @param p Nuclear parity
+        /// @param w Partial decay width (MeV) for the given spin-parity
+        GammaSpinParityWidth( int twoJ, marley::Parity p, double w, int mpol )
+          : SpinParityWidth( twoJ, p, w ), multipolarity( mpol ) {}
+
+        int multipolarity; ///< Multipolarity of this gamma-ray emission
+      };
 
       /// @copydoc marley::ExitChannel::ExitChannel()
       /// @copydoc marley::ContinuumExitChannel( double, int )
