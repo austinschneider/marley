@@ -203,15 +203,57 @@ int main( int argc, char* argv[] ) {
             const marley::ContinuumExitChannel& >( *(*ec_iter) );
           cec.differential_width( Exf, true );
 
+          // Retrieve extra information based on the kind of emitted particle
+          int mpol, two_j_frag, orb_l;
+          bool emitted_gamma = false;
+          auto mpol_attr = vtx->attribute< HepMC3::IntAttribute >(
+            "multipolarity" );
+          if ( mpol_attr ) {
+            emitted_gamma = true;
+            mpol = mpol_attr->value();
+          }
+          else {
+            auto two_j_frag_attr = vtx->attribute< HepMC3::IntAttribute >(
+              "two_j_frag" );
+            auto orb_l_attr = vtx->attribute< HepMC3::IntAttribute >( "orb_l" );
+
+            // TODO: add error handling for missing attributes here
+
+            two_j_frag = two_j_frag_attr->value();
+            orb_l = orb_l_attr->value();
+          }
+
+          double width_sp = 0.;
+          if ( width_sp_attr ) {
+            decayed_to_continuum = true;
+            width_sp = width_sp_attr->value();
+          }
+
           // Find the SpinParityWidth object corresponding to the spin-parity
           // value that was actually sampled
           const auto spw_vec = cec.get_spw_table();
           auto spw_iter = std::find_if( spw_vec.cbegin(), spw_vec.cend(),
-            [ twoJf, Pf ]( const marley::ContinuumExitChannel
-              ::SpinParityWidth& spw ) -> bool
+            [ twoJf, Pf, emitted_gamma, mpol, two_j_frag, orb_l ](
+              const marley::ContinuumExitChannel::SpinParityWidth& spw )
+            -> bool
             {
               if ( Pf != spw.Pf ) return false;
               if ( twoJf != spw.twoJf ) return false;
+              if ( emitted_gamma ) {
+                const auto* g_spw = static_cast< const marley
+                  ::GammaContinuumExitChannel::GammaSpinParityWidth* >( &spw );
+                if ( !g_spw ) return false;
+                if ( mpol != g_spw->multipolarity ) return false;
+              }
+              else {
+                // emitted fragment
+                const auto* f_spw = static_cast< const marley
+                  ::FragmentContinuumExitChannel
+                  ::FragmentSpinParityWidth* >( &spw );
+                if ( !f_spw ) return false;
+                if ( two_j_frag != f_spw->two_j_frag ) return false;
+                if ( orb_l != f_spw->orb_l ) return false;
+              }
               return true;
             }
           );
