@@ -258,6 +258,26 @@ int main( int argc, char* argv[] ) {
             }
           );
 
+          if ( !emitted_gamma ) {
+
+            std::cout << "VERTEX HAD twoJf = " << twoJf << ", Pf = "
+                << Pf << ", two_j_frag = " << two_j_frag
+                << ", orb_l = " << orb_l << '\n';
+
+            std::cout << "*****Starting list of angular momenta*****\n";
+            for ( const auto& spw : spw_vec ) {
+              const auto* f_spw = static_cast< const marley
+                ::FragmentContinuumExitChannel
+                ::FragmentSpinParityWidth* >( &spw );
+
+              std::cout << "DEBUG! twoJf = " << f_spw->twoJf << ", Pf = "
+                << f_spw->Pf << ", two_j_frag = " << f_spw->two_j_frag
+                << ", orb_l = " << f_spw->orb_l << ", diff_width = "
+                << f_spw->diff_width << '\n';
+            }
+            std::cout << "*****Ending list of angular momenta*****\n";
+          }
+
           if ( spw_iter == spw_vec.cend() ) {
             std::cout << "WARNING: could not find SpinParityWidth.\n";
             weight = 0.;
