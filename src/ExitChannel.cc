@@ -248,6 +248,8 @@ double marley::FragmentContinuumExitChannel::differential_width( double Exf,
   int two_s = f.get_two_s(); // two times the fragment spin
   marley::Parity Pa = f.get_parity(); // intrinsic parity
 
+
+
   // Final nuclear parity
   marley::Parity Pf;
   // The orbital parity starts as (-1)^0 = 1. Rather than applying parity
@@ -262,9 +264,11 @@ double marley::FragmentContinuumExitChannel::differential_width( double Exf,
     for (int two_j = std::abs(two_l - two_s);
       two_j <= two_l + two_s; two_j += 2)
     {
+        
       for (int twoJf = std::abs(twoJi_ - two_j);
         twoJf <= twoJi_ + two_j; twoJf += 2)
       {
+          
         double Tlj = om.transmission_coefficient( total_KE_CM_frame,
           fragment_pdg_, two_j, l, two_s );
 
@@ -515,6 +519,13 @@ void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,
   last_sampled_spw_ = &jpi_widths_table_.at( jpi_index );
   twoJ = last_sampled_spw_->twoJf;
   Pi = last_sampled_spw_->Pf;
+
+  const auto* temp_ptr = dynamic_cast< const FragmentContinuumExitChannel
+    ::FragmentSpinParityWidth* >( last_sampled_spw_ );
+  if ( temp_ptr ) {
+      std::cout << "CHOSEN two_j_frag = " << temp_ptr->two_j_frag << '\n';
+  }
+
 }
 
 void marley::ContinuumExitChannel::clear_jpi_widths() const {

@@ -74,8 +74,7 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
       + std::to_string(Ex) + " MeV encountered in marley::NucleusDecayer::"
       "deexcite_residue()");
 
-    // To prevent accidental double application of the de-excitation cascade,
-    // check that the residue mass is consistent with the excitation energy
+    // To prevent accidental double application of the de-excitation cascade,   // check that the residue mass is consistent with the excitation energy
     // stored in the event record (and thus was never decayed).
     const auto& mt = marley::MassTable::Instance();
     int initial_residue_pdg = residue->pid();
@@ -220,12 +219,14 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
             const auto* f_spw = static_cast< const marley
               ::FragmentContinuumExitChannel::FragmentSpinParityWidth* >(
               spw_ptr );
-
+// Print two_j_frag value with "SELECTED"
+std::cout << "two_j_frag = " << f_spw->two_j_frag << " SELECTED" << std::endl;
             decay_vtx->add_attribute( "two_j_frag",
               std::make_shared< HepMC3::IntAttribute >(f_spw->two_j_frag) );
             decay_vtx->add_attribute( "orb_l",
               std::make_shared< HepMC3::IntAttribute >(f_spw->orb_l) );
           }
+
           else {
             // Gamma-ray emission in the continuum
             const auto* g_spw = static_cast< const marley

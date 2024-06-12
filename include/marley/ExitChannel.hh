@@ -294,6 +294,8 @@ namespace marley {
         SpinParityWidth( int twoJ, marley::Parity p, double w )
           : twoJf( twoJ ), Pf( p ), diff_width( w ) {}
 
+        virtual ~SpinParityWidth() {}
+
         int twoJf; ///< Final nuclear spin
         marley::Parity Pf; ///< Final nuclear parity
         double diff_width; ///< Partial differential decay width (MeV)
@@ -412,6 +414,8 @@ namespace marley {
           int two_j_fr, int ell )
           : SpinParityWidth( twoJ, p, w ), two_j_frag( two_j_fr ),
           orb_l( ell ) {}
+
+        virtual ~FragmentSpinParityWidth() {}
 
         int two_j_frag; ///< Two times the fragment total angular momentum
         int orb_l; ///< Orbital angular momentum
