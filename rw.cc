@@ -231,25 +231,27 @@ int main( int argc, char* argv[] ) {
 
           // Find the SpinParityWidth object corresponding to the spin-parity
           // value that was actually sampled
-          const auto spw_vec = cec.get_spw_table();
+          const auto& spw_vec = cec.get_spw_table();
           auto spw_iter = std::find_if( spw_vec.cbegin(), spw_vec.cend(),
             [ twoJf, Pf, emitted_gamma, mpol, two_j_frag, orb_l ](
-              const marley::ContinuumExitChannel::SpinParityWidth& spw )
+              const std::unique_ptr< marley::ContinuumExitChannel
+                ::SpinParityWidth >& spw )
             -> bool
             {
-              if ( Pf != spw.Pf ) return false;
-              if ( twoJf != spw.twoJf ) return false;
+              if ( Pf != spw->Pf ) return false;
+              if ( twoJf != spw->twoJf ) return false;
               if ( emitted_gamma ) {
                 const auto* g_spw = static_cast< const marley
-                  ::GammaContinuumExitChannel::GammaSpinParityWidth* >( &spw );
+                  ::GammaContinuumExitChannel::GammaSpinParityWidth* >(
+                  spw.get() );
                 if ( !g_spw ) return false;
                 if ( mpol != g_spw->multipolarity ) return false;
               }
               else {
                 // emitted fragment
                 const auto* f_spw = static_cast< const marley
-                  ::FragmentContinuumExitChannel
-                  ::FragmentSpinParityWidth* >( &spw );
+                  ::FragmentContinuumExitChannel::FragmentSpinParityWidth* >(
+                  spw.get() );
                 if ( !f_spw ) return false;
                 if ( two_j_frag != f_spw->two_j_frag ) return false;
                 if ( orb_l != f_spw->orb_l ) return false;
@@ -268,7 +270,7 @@ int main( int argc, char* argv[] ) {
             for ( const auto& spw : spw_vec ) {
               const auto* f_spw = static_cast< const marley
                 ::FragmentContinuumExitChannel
-                ::FragmentSpinParityWidth* >( &spw );
+                ::FragmentSpinParityWidth* >( spw.get() );
 
               std::cout << "DEBUG! twoJf = " << f_spw->twoJf << ", Pf = "
                 << f_spw->Pf << ", two_j_frag = " << f_spw->two_j_frag
@@ -286,8 +288,8 @@ int main( int argc, char* argv[] ) {
 
           // Store the partial differential width to this spin-parity state
           // under the alternative calculation
-          width_sp_alt = spw_iter->diff_width;
-        }
+          width_sp_alt = spw_iter->get()->diff_width;
+      }
 
         // We've accumulated all the width values we need to compute an
         // event weight. Do some sanity checks beforehand.
