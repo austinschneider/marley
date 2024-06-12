@@ -318,8 +318,8 @@ namespace marley {
         { return last_sampled_spw_; }
 
       /// @brief Grants const access to the vector of SpinParityWidth objects
-      inline const std::vector< SpinParityWidth >& get_spw_table() const
-        { return jpi_widths_table_; }
+      inline const std::vector< std::unique_ptr< SpinParityWidth > >&
+        get_spw_table() const { return jpi_widths_table_; }
 
     protected:
 
@@ -332,7 +332,8 @@ namespace marley {
 
       /// @brief Table of possible final-state spin-parities together
       /// with their partial differential decay widths
-      mutable std::vector< SpinParityWidth > jpi_widths_table_;
+      mutable std::vector< std::unique_ptr< SpinParityWidth > >
+        jpi_widths_table_;
 
       /// @brief Flag that allows skipping the sampling of a final
       /// nuclear spin-parity (useful only for testing purposes)

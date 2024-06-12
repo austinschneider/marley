@@ -264,11 +264,11 @@ double marley::FragmentContinuumExitChannel::differential_width( double Exf,
     for (int two_j = std::abs(two_l - two_s);
       two_j <= two_l + two_s; two_j += 2)
     {
-        
+
       for (int twoJf = std::abs(twoJi_ - two_j);
         twoJf <= twoJi_ + two_j; twoJf += 2)
       {
-          
+
         double Tlj = om.transmission_coefficient( total_KE_CM_frame,
           fragment_pdg_, two_j, l, two_s );
 
@@ -279,9 +279,11 @@ double marley::FragmentContinuumExitChannel::differential_width( double Exf,
         diff_width += term;
 
         if ( store_jpi_widths ) {
-          jpi_widths_table_.push_back(
-            FragmentSpinParityWidth( twoJf, Pf, term, two_j, l )
-          );
+
+          auto f_spw = std::make_unique< FragmentSpinParityWidth >(
+            twoJf, Pf, term, two_j, l );
+
+          jpi_widths_table_.push_back( std::move(f_spw) );
           // TODO: include (l, two_j) in cached term
         }
       }
@@ -371,9 +373,11 @@ double marley::GammaContinuumExitChannel::differential_width( double Exf,
         double term = one_over_two_pi_rho_i_ * Txl * rho_f;
 
         if ( store_jpi_widths ) {
-          jpi_widths_table_.push_back( GammaContinuumExitChannel
-            ::GammaSpinParityWidth( twoJf, Pf, term, mpol )
-          );
+
+          auto g_spw = std::make_unique< GammaSpinParityWidth >(
+            twoJf, Pf, term, mpol );
+
+          jpi_widths_table_.push_back( std::move(g_spw) );
         }
 
         diff_width += term;
@@ -502,13 +506,13 @@ void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,
     "are zero." );
 
   // Sample a final spin and parity
-  const auto begin = marley::IteratorToMember<
-    std::vector<SpinParityWidth>::const_iterator,
+  const auto begin = marley::IteratorToPointerMember<
+    std::vector< std::unique_ptr<SpinParityWidth> >::const_iterator,
     const double>( jpi_widths_table_.cbegin(),
     &SpinParityWidth::diff_width );
 
-  const auto end = marley::IteratorToMember<
-    std::vector<SpinParityWidth>::const_iterator,
+  const auto end = marley::IteratorToPointerMember<
+    std::vector< std::unique_ptr<SpinParityWidth> >::const_iterator,
     const double>( jpi_widths_table_.cend(),
     &SpinParityWidth::diff_width );
 
@@ -516,7 +520,7 @@ void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,
   size_t jpi_index = gen.sample_from_distribution( jpi_dist );
 
   // Store the results
-  last_sampled_spw_ = &jpi_widths_table_.at( jpi_index );
+  last_sampled_spw_ = jpi_widths_table_.at( jpi_index ).get();
   twoJ = last_sampled_spw_->twoJf;
   Pi = last_sampled_spw_->Pf;
 
