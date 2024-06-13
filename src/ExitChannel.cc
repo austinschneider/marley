@@ -527,7 +527,7 @@ void marley::ContinuumExitChannel::sample_spin_parity(double Exf, int& twoJ,
   const auto* temp_ptr = dynamic_cast< const FragmentContinuumExitChannel
     ::FragmentSpinParityWidth* >( last_sampled_spw_ );
   if ( temp_ptr ) {
-      std::cout << "CHOSEN two_j_frag = " << temp_ptr->two_j_frag << '\n';
+     // std::cout << "CHOSEN two_j_frag = " << temp_ptr->two_j_frag << '\n';
   }
 
 }

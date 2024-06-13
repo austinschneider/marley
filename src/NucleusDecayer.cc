@@ -220,7 +220,7 @@ void marley::NucleusDecayer::process_event( HepMC3::GenEvent& event,
               ::FragmentContinuumExitChannel::FragmentSpinParityWidth* >(
               spw_ptr );
 // Print two_j_frag value with "SELECTED"
-std::cout << "two_j_frag = " << f_spw->two_j_frag << " SELECTED" << std::endl;
+//std::cout << "two_j_frag = " << f_spw->two_j_frag << " SELECTED" << std::endl;
             decay_vtx->add_attribute( "two_j_frag",
               std::make_shared< HepMC3::IntAttribute >(f_spw->two_j_frag) );
             decay_vtx->add_attribute( "orb_l",

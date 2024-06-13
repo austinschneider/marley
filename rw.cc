@@ -1,7 +1,9 @@
 // Standard library includes
 #include <algorithm>
 #include <cmath>
-
+//Root Includes,not sure this is neccessary, but to be safe
+#include <TFile.h>
+#include <TTree.h>
 // HepMC3 includes
 #include "HepMC3/FourVector.h"
 #include "HepMC3/GenEvent.h"
@@ -46,7 +48,7 @@ int main( int argc, char* argv[] ) {
   const std::string rw_om_config_file( "my_om_rw_config.js" );
   auto rw_config = marley::JSON::load_file( rw_om_config_file );
   marley::StructureDatabase sdb_alt;
-  sdb_alt.load_optical_model_params( &rw_config );
+ sdb_alt.load_optical_model_params( &rw_config );
 
   // Prepare to read the input file(s)
   std::vector< std::string > input_file_names;
@@ -61,9 +63,18 @@ int main( int argc, char* argv[] ) {
 
     // Temporary object to use for reading in saved events
     HepMC3::GenEvent ev;
+// Create a new ROOT file
+    TFile *output = new TFile("weights.root", "RECREATE");
 
-    // Event loop
+    // Create a new TTree
+    TTree *tree = new TTree("tree", "Tree storing weights");
+// Variables to store the values
+    double weight;
     int event_num = 0;
+    // Create branches in the tree
+    tree->Branch("weight", &weight, "weight/D");
+    tree->Branch("event_num", &event_num, "event_num/I");
+    // Event loop
     while ( efr >> ev ) {
 
       //if ( event_num % 1000 == 0 )
@@ -262,22 +273,22 @@ int main( int argc, char* argv[] ) {
 
           if ( !emitted_gamma ) {
 
-            std::cout << "VERTEX HAD twoJf = " << twoJf << ", Pf = "
-                << Pf << ", two_j_frag = " << two_j_frag
-                << ", orb_l = " << orb_l << '\n';
+           // std::cout << "VERTEX HAD twoJf = " << twoJf << ", Pf = "
+               // << Pf << ", two_j_frag = " << two_j_frag
+               // << ", orb_l = " << orb_l << '\n';
 
-            std::cout << "*****Starting list of angular momenta*****\n";
+            //std::cout << "*****Starting list of angular momenta*****\n";
             for ( const auto& spw : spw_vec ) {
               const auto* f_spw = static_cast< const marley
                 ::FragmentContinuumExitChannel
                 ::FragmentSpinParityWidth* >( spw.get() );
 
-              std::cout << "DEBUG! twoJf = " << f_spw->twoJf << ", Pf = "
-                << f_spw->Pf << ", two_j_frag = " << f_spw->two_j_frag
-                << ", orb_l = " << f_spw->orb_l << ", diff_width = "
-                << f_spw->diff_width << '\n';
+             // std::cout << "DEBUG! twoJf = " << f_spw->twoJf << ", Pf = "
+               // << f_spw->Pf << ", two_j_frag = " << f_spw->two_j_frag
+               // << ", orb_l = " << f_spw->orb_l << ", diff_width = "
+               // << f_spw->diff_width << '\n';
             }
-            std::cout << "*****Ending list of angular momenta*****\n";
+           // std::cout << "*****Ending list of angular momenta*****\n";
           }
 
           if ( spw_iter == spw_vec.cend() ) {
@@ -335,10 +346,25 @@ int main( int argc, char* argv[] ) {
       } // decay vertex loop
 
       std::cout << "  weight = " << weight << '\n';
+      // Open the file in append mode
+     // std::ofstream outfile;
+     // outfile.open("weights.txt", std::ios_base::app); // Append mode
 
-      ++event_num;
+      // Check if the file is open
+      //if (outfile.is_open()) {
+           // outfile << "weight = " << weight << '\n'; // Write the weight to the file
+           // outfile.close(); // Close the file
+     // } else {
+          // std::cerr << "Unable to open file for writing\n";
+     // }   
+    tree->Fill();
+
+    ++event_num;
 
     } // event loop
+    // Write the TTree to the ROOT file and close the file
+    output->Write();
+    output->Close();
   } // file loop
 
   return 0;
