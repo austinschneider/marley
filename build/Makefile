@@ -150,7 +150,7 @@ ifneq ($(MAKECMDGOALS),uninstall)
   OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(SRC_DIR)/*.cc)))
   OBJECTS := $(filter-out marley.o marley_root.o, $(OBJECTS))
   OBJECTS := $(filter-out marsum.o RootJSONConfig.o, $(OBJECTS))
-  OBJECTS := $(filter-out RootOutputFile.o RootEventFileReader.o, $(OBJECTS))
+  OBJECTS := $(filter-out OutputFileRoot.o, $(OBJECTS))
   OBJECTS := $(filter-out MacroEventFileReader.o, $(OBJECTS))
 
   # Get information about the GNU Scientific Library installation
@@ -180,6 +180,7 @@ Please ensure that the gsl-config executable is on your PATH and try again.
     else
       # Add the appropriate compilation flags to use the HepMC3 reference
       # implementation
+      HEPMC3_INCDIR := $(shell $(HEPMC3CONFIG) --includedir)
       HEPMC3_CXXFLAGS := $(shell $(HEPMC3CONFIG) --cflags)
       HEPMC3_LDFLAGS := $(shell $(HEPMC3CONFIG) --libs)
       FOUND_HEPMC3 := TRUE
@@ -190,7 +191,8 @@ Please ensure that the gsl-config executable is on your PATH and try again.
 
   ifndef FOUND_HEPMC3
     # Use the built-in HepMC3 library
-    HEPMC3_CXXFLAGS := -I$(HEPMC3_DIR)/include
+    HEPMC3_INCDIR := $(HEPMC3_DIR)/include
+    HEPMC3_CXXFLAGS := -I$(HEPMC3_INCDIR)
     HEPMC3_LDFLAGS := -L$(BUILD_DIR) -lHepMC3
 
     HEPMC3_OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(HEPMC3_DIR)/*.cc)))
@@ -255,8 +257,9 @@ $(HEPMC3_SHARED_LIB): $(HEPMC3_OBJECTS)
       ifeq ($(UNAME_S),Linux)
         ROOT_LDFLAGS += -rdynamic
       endif
-      ROOT_DICT_INCLUDES := -I$(INCLUDE_DIR) marley/Particle.hh \
-        marley/Event.hh marley/MacroEventFileReader.hh marley/Parity.hh \
+      ROOT_DICT_INCLUDES := -I$(INCLUDE_DIR) -I$(HEPMC3_INCDIR) \
+        -I$(HEPMC3_INCDIR)/HepMC3/Data \
+        $(notdir $(wildcard $(HEPMC3_INCDIR)/HepMC3/Data/*.h)) \
         marley/marley_linkdef.hh
       USE_ROOT = yes
       ROOT_OBJ_DICT = marley_root_dict.o
@@ -268,16 +271,16 @@ $(HEPMC3_SHARED_LIB): $(HEPMC3_OBJECTS)
 
       ROOT_SHARED_LIB_LDFLAGS := -l$(ROOT_SHARED_LIB_NAME)
       ROOT_SHARED_LIB_OBJECTS = marley_root.o RootJSONConfig.o OutputFile.o
-      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o
-      #ROOT_SHARED_LIB_OBJECTS += RootOutputFile.o
+      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o OutputFileRoot.o
+      ROOT_SHARED_LIB_OBJECTS += $(ROOT_OBJ_DICT)
       #ROOT_SHARED_LIB_OBJECTS += RootEventFileReader.o MacroEventFileReader.o
-      #ROOT_SHARED_LIB_OBJECTS += $(ROOT_OBJ_DICT)
   
 $(ROOT_OBJ_DICT):
 	$(RM) marley_root_dict*.*
 	$(ROOTCLING) -f marley_root_dict.cc -c $(ROOT_DICT_INCLUDES)
 	$(CXX) $(ROOT_CXXFLAGS) $(CXXFLAGS) $(GSL_CXXFLAGS) $(HEPMC3_CXXFLAGS) \
-	-I$(INCLUDE_DIR) -fPIC -o $(ROOT_OBJ_DICT) -c marley_root_dict.cc
+	  -I$(INCLUDE_DIR) -I$(HEPMC3_INCDIR)/HepMC3/Data -fPIC \
+          -o $(ROOT_OBJ_DICT) -c marley_root_dict.cc
 	$(RM) marley_root_dict.cc
   
 $(ROOT_SHARED_LIB): $(SHARED_LIB) $(ROOT_SHARED_LIB_OBJECTS)

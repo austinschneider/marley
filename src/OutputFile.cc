@@ -22,6 +22,7 @@
 #include "marley/OutputFileAscii.hh"
 
 #ifdef USE_ROOT
+  #include "marley/OutputFileRoot.hh"
   #include "marley/RootJSONConfig.hh"
 #endif
 
@@ -69,6 +70,11 @@ std::shared_ptr< marley::OutputFile > marley::OutputFile::make_OutputFile(
   if ( format == "ascii" ) {
     return std::make_shared< marley::OutputFileAscii >( output_config );
   }
+  #ifdef USE_ROOT
+  else if ( format == "root" ) {
+    return std::make_shared< marley::OutputFileRoot >( output_config );
+  }
+  #endif
   else throw marley::Error( "Invalid output file format \"" + format
     + "\" given in an output file specification" );
 }
