@@ -1,7 +1,5 @@
 // Standard library includes
 #include <algorithm>
-#include <cmath>
-//Root Includes,not sure this is neccessary, but to be safe
 #include <TFile.h>
 #include <TTree.h>
 // HepMC3 includes
@@ -45,17 +43,24 @@ int main( int argc, char* argv[] ) {
 
   // Create an alternative structure database with a custom set of optical
   // model parameters
-  const std::string rw_om_config_file( "my_om_rw_config.js" );
-  auto rw_config = marley::JSON::load_file( rw_om_config_file );
+  const std::string rw_om_config_file( "prc_marley_KDUQFederal/optical_model_kduq_federal_232.js" );
+  auto om_config = marley::JSON::load_file( rw_om_config_file );
+  auto rw_config = om_config.at( "opt_mod" );
   marley::StructureDatabase sdb_alt;
  sdb_alt.load_optical_model_params( &rw_config );
 
   // Prepare to read the input file(s)
   std::vector< std::string > input_file_names;
   for ( int i = 1; i < argc; ++i ) input_file_names.push_back( argv[i] );
-
+// Open the output ASCII file
+  //  std::ofstream outfile("weights_test.txt");
+    //if (!outfile.is_open()) {
+      //  std::cerr << "Unable to open file for writing\n";
+        //return 1;
+   //}
+//outfile << "event_num weight\n";
   // File loop
-  for ( const auto& file_name : input_file_names ) {
+  for (const auto& file_name : input_file_names ) {
 
     // Open the current file for reading
     marley::EventFileReader efr( file_name );
@@ -64,10 +69,11 @@ int main( int argc, char* argv[] ) {
     // Temporary object to use for reading in saved events
     HepMC3::GenEvent ev;
 // Create a new ROOT file
-    TFile *output = new TFile("weights.root", "RECREATE");
+    TFile *output = new
+    TFile("fix_float.root", "RECREATE");
 
     // Create a new TTree
-    TTree *tree = new TTree("tree", "Tree storing weights");
+    TTree *tree = new TTree("msw", "Tree storing weights");
 // Variables to store the values
     double weight;
     int event_num = 0;
@@ -80,8 +86,8 @@ int main( int argc, char* argv[] ) {
       //if ( event_num % 1000 == 0 )
       std::cout << "Event " << event_num << '\n';
 
+      //double weight = 1.;
       double weight = 1.;
-
       // Get a vector of pointers to all decay vertices in the event that
       // were handled using the Hauser-Feshbach model
       auto hf_vtx_vec = marley_hepmc3::get_vertices_with_status(
@@ -331,7 +337,7 @@ int main( int argc, char* argv[] ) {
         // Everything looks okay, so do the weight calculation using the
         // appropriate expression for a decay to the continuum or a discrete
         // nuclear level
-        double w = width_tot / width_tot_alt;
+        double  w = width_tot / width_tot_alt;
         if ( decayed_to_continuum ) {
           w *= width_sp_alt / width_sp;
         }
@@ -346,26 +352,22 @@ int main( int argc, char* argv[] ) {
       } // decay vertex loop
 
       std::cout << "  weight = " << weight << '\n';
-      // Open the file in append mode
-     // std::ofstream outfile;
-     // outfile.open("weights.txt", std::ios_base::app); // Append mode
-
-      // Check if the file is open
-      //if (outfile.is_open()) {
-           // outfile << "weight = " << weight << '\n'; // Write the weight to the file
-           // outfile.close(); // Close the file
-     // } else {
-          // std::cerr << "Unable to open file for writing\n";
-     // }   
-    tree->Fill();
-
+    tree->SetBranchAddress("weight", &weight);
+   tree->SetBranchAddress("event_num", &event_num);
+   tree->Fill();
+// Print the weight that is being saved to the file
+           // std::cout << "Weight saved to file for event " << event_num << " = " << weight << '\n';
+// Write the weight and event number to the ASCII file
+          //  outfile << event_num << " " << weight << '\n';
     ++event_num;
 
     } // event loop
     // Write the TTree to the ROOT file and close the file
-    output->Write();
+   output->Write();
     output->Close();
+    // Close the output ASCII file
+    //outfile.close();
   } // file loop
 
-  return 0;
-}
+return 0;
+}  
