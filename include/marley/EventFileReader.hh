@@ -24,6 +24,15 @@
 // MARLEY includes
 #include "marley/OutputFile.hh"
 
+#ifdef USE_ROOT
+// HepMC3 includes
+#include "HepMC3/Data/GenEventData.h"
+
+// ROOT includes
+#include "TFile.h"
+#include "TTree.h"
+#endif
+
 // Forward-declare some HepMC3 classes
 namespace HepMC3 {
   class GenEvent;
@@ -86,6 +95,27 @@ namespace marley {
 
       /// @brief Helper object used to interpret ASCII-format HepMC3 files
       std::shared_ptr< HepMC3::ReaderAscii > reader_;
+
+      #ifdef USE_ROOT
+      /// @brief Helper object used to interpret ROOT-format HepMC3 files
+      std::unique_ptr< TFile > tfile_;
+
+      // @brief Pointer to the TTree containing the MARLEY events to be loaded
+      TTree* ttree_ = nullptr;
+
+      /// @brief The index of the last TTree entry that was read
+      /// @details If no events have been read from the TTree yet, then
+      /// this variable will have the value -1
+      long event_num_ = -1;
+
+      /// @brief Temporary storage for reading back HepMC3 events from
+      /// a ROOT-format file
+      std::unique_ptr< HepMC3::GenEventData > temp_event_data_;
+
+      /// @brief Bare pointer to the event data needed for use when setting
+      /// the branch address for ROOT I/O
+      HepMC3::GenEventData* temp_event_data_ptr_ = nullptr;
+      #endif
 
       /// @brief Flux-averaged total cross section (MeV<sup> -2</sup>) used to
       /// produce the events in the file, or zero if that information is not

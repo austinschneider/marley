@@ -27,6 +27,15 @@
 #include "marley/FileManager.hh"
 #include "marley/EventFileReader.hh"
 
+#ifdef USE_ROOT
+  #include "TError.h"
+  #include "TFile.h"
+  #include "TTree.h"
+
+  #include "HepMC3/Data/GenEventData.h"
+#endif
+
+
 marley::EventFileReader::EventFileReader( const std::string& file_name )
   : file_name_( file_name )
 {
@@ -47,6 +56,26 @@ bool marley::EventFileReader::deduce_file_format() {
 
   // Create a temporary event object to use for the following format checks
   HepMC3::GenEvent temp_event;
+
+  #ifdef USE_ROOT
+  // Before checking if the file is in ROOT format, completely suppress any
+  // error messages from ROOT.
+  auto temp_error_level = gErrorIgnoreLevel;
+  gErrorIgnoreLevel = kFatal;
+
+  // Try to read in a HepMC3::GenEvent from the file assuming that the ROOT
+  // output format was used
+  tfile_ = std::unique_ptr<TFile>( TFile::Open(file_name_.c_str(), "read") );
+
+  // We've completed the ROOT format check, so restore the old error messaging
+  // behavior
+  gErrorIgnoreLevel = temp_error_level;
+
+  if ( tfile_ ) {
+    format_ = marley::OutputFile::Format::ROOT;
+    return true;
+  }
+  #endif
 
   // Try to read in a HepMC3::GenEvent from the file assuming that the ASCII
   // output format was used
@@ -94,6 +123,24 @@ void marley::EventFileReader::initialize() {
       break;
     }
 
+    #ifdef USE_ROOT
+    case marley::OutputFile::Format::ROOT:
+    {
+      tfile_->GetObject( "MARLEY_event_tree", ttree_ );
+      if ( !ttree_ ) throw marley::Error( "Failed to load MARLEY event TTree"
+        " from the ROOT file \"" + file_name_ + '\"' );
+
+      temp_event_data_ = std::make_unique< HepMC3::GenEventData >();
+      temp_event_data_ptr_ = temp_event_data_.get();
+      ttree_->SetBranchAddress( "event", &temp_event_data_ptr_ );
+
+      // TODO: retrieve this
+      //flux_avg_tot_xs_ = temp_param->GetVal();
+
+      break;
+    }
+    #endif
+
     default:
       throw marley::Error( "Unrecognized file format encountered in"
         " marley::EventFileReader::initialize()" );
@@ -111,6 +158,32 @@ bool marley::EventFileReader::next_event( HepMC3::GenEvent& ev )
       return read_ok && in_;
       break;
     }
+
+    #ifdef USE_ROOT
+    case marley::OutputFile::Format::ROOT:
+    {
+      ++event_num_;
+      if ( event_num_ < ttree_->GetEntries() ) {
+
+        temp_event_data_->particles.clear();
+        temp_event_data_->vertices.clear();
+        temp_event_data_->links1.clear();
+        temp_event_data_->links2.clear();
+        temp_event_data_->attribute_id.clear();
+        temp_event_data_->attribute_name.clear();
+        temp_event_data_->attribute_string.clear();
+
+        ttree_->GetEntry( event_num_ );
+        ev.read_data( *temp_event_data_ );
+        return true;
+      }
+
+      ev = HepMC3::GenEvent();
+      return false;
+
+      break;
+    }
+    #endif
 
     default:
       throw marley::Error( "Unrecognized file format encountered in"
@@ -130,6 +203,14 @@ marley::EventFileReader::operator bool() const {
       return static_cast< bool >( in_ );
       break;
     }
+
+    #ifdef USE_ROOT
+    case marley::OutputFile::Format::ROOT:
+    {
+      return ( tfile_ && ttree_ && event_num_ < ttree_->GetEntries() );
+      break;
+    }
+    #endif
 
     default:
       throw marley::Error( "Unrecognized file format encountered in"

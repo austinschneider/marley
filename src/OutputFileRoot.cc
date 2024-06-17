@@ -49,7 +49,7 @@ void marley::OutputFileRoot::open() {
   // TODO: check if TTree already exists in the file
   out_tfile_ = std::make_unique< TFile >( name_.c_str(),
     open_mode_str.c_str() );
-  out_tree_ = new TTree( "hepmc3_tree", "hepmc3_tree" );
+  out_tree_ = new TTree( "MARLEY_event_tree", "HepMC3-format MARLEY events" );
 
   temp_event_data_ = std::make_unique< HepMC3::GenEventData >();
   out_tree_->Branch( "event", temp_event_data_.get() );
