@@ -222,12 +222,26 @@ int main( int argc, char* argv[] ) {
 
   int residue_net_charge = Delta_Z + TARGET_NET_CHARGE;
 
-  // Prepare the output file
-  std::string out_config_str = "{ format: \"ascii\","
-    " file: \"" + output_file_name + "\", mode: \"overwrite\" }";
-  auto out_config = marley::JSON::load( out_config_str );
+  // Prepare the output file(s)
+  std::vector< std::shared_ptr<marley::OutputFile> > output_files;
 
-  auto out_file = marley::OutputFile::make_OutputFile( out_config );
+  if ( decays.has_key("output") ) {
+    marley::JSON output_set = decays.at( "output" );
+    if ( !output_set.is_array() ) throw marley::Error( "The"
+      " \"output\" key must have a value that is a JSON array." );
+    else for ( const auto& el : output_set.array_range() ) {
+      output_files.push_back( marley::OutputFile::make_OutputFile(el) );
+    }
+  }
+  else {
+    // If the user didn't specify anything for the output key, then
+    // by default write to a single ASCII-format file.
+    std::string out_config_str = "{ format: \"ascii\","
+      " file: \"decay_events.hepmc3\", mode: \"overwrite\" }";
+    auto out_config = marley::JSON::load( out_config_str );
+
+    output_files.push_back( marley::OutputFile::make_OutputFile(out_config) );
+  }
 
   for ( long evnum = 0; evnum < num_events; ++evnum ) {
 
@@ -288,8 +302,10 @@ int main( int argc, char* argv[] ) {
     // Add a little metadata to the event (attach run info, etc.)
     gen.finish_event_metadata( *event );
 
-    // We're done, write out the event
-    out_file->write_event( event.get() );
+    // We're done, write the event to the output file(s)
+    for ( const auto& file : output_files ) {
+      file->write_event( event.get() );
+    }
 
     std::cout << "Event " << evnum << "\n";
   }
