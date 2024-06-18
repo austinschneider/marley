@@ -189,17 +189,45 @@ int main( int argc, char* argv[] ) {
   }
 
   // Get two times the initial nuclear spin
-  int twoJ = assign_from_json< int >( "twoJ", decays, ok, -2 );
-  if ( twoJ < 0 ) {
-    throw marley::Error( "Negative nuclear spin value encountered" );
+  std::vector< int > twoJ_vec;
+  if ( !decays.has_key("twoJ") ) {
+    throw marley::Error( "Missing \"twoJ\" key specifying the nuclear spin" );
   }
+  else {
+    const marley::JSON& twoJ_obj = decays.at( "twoJ" );
+    if ( !twoJ_obj.is_array() ) {
+     throw marley::Error( "The \"twoJ\" key must have a value that"
+       " is a JSON array." );
+    }
+    else {
+      convert_json< std::vector<int> >( twoJ_obj, twoJ_vec );
+    }
+  }
+
+  for ( const auto& twoJ : twoJ_vec ) {
+    if ( twoJ < 0 ) throw marley::Error( "Negative nuclear spin"
+      " value encountered" );
+  }
+
+  // Sample twoJ values with equal probability
+  std::vector< double > twoJ_sampling_weights( twoJ_vec.size(), 1. );
+  const auto twoJ_begin = twoJ_sampling_weights.cbegin();
+  const auto twoJ_end = twoJ_sampling_weights.cend();
+  std::discrete_distribution< size_t > twoJ_dist( twoJ_begin, twoJ_end );
 
   // Get the initial nuclear parity
   auto parity_str = assign_from_json< std::string >( "parity", decays,
     ok, "+" );
-  marley::Parity parity;
-  std::istringstream temp_iss( parity_str );
-  temp_iss >> parity;
+  if ( parity_str != "+" && parity_str != "-" && parity_str != "random" ) {
+    throw marley::Error( "Invalid parity setting \"" + parity_str + '\"' );
+  }
+
+  // Set up a discrete distribution for sampling parities (in case we need it)
+  const std::vector< std::string > parity_strings = { "+", "-" };
+  const std::vector< double > parity_sampling_weights = { 1., 1. };
+  const auto par_begin = parity_sampling_weights.cbegin();
+  const auto par_end = parity_sampling_weights.cend();
+  std::discrete_distribution< size_t > par_dist( par_begin, par_end );
 
   // Get the name to use for the output file
   auto output_file_name = assign_from_json< std::string >( "output_file_name",
@@ -253,6 +281,20 @@ int main( int argc, char* argv[] ) {
     if ( sample_Ex ) {
       Ex = gen.uniform_random_double( Ex_min, Ex_max, true );
     }
+
+    // Sample an initial nuclear spin value for the current event
+    size_t twoJ_index = gen.sample_from_distribution( twoJ_dist );
+    int twoJ = twoJ_vec.at( twoJ_index );
+
+    // Choose the initial nuclear parity, sampling a random value if needed
+    std::string par_str = parity_str;
+    if ( par_str == "random" ) {
+      size_t par_index = gen.sample_from_distribution( par_dist );
+      par_str = parity_strings.at( par_index );
+    }
+    marley::Parity parity;
+    std::istringstream temp_iss( par_str );
+    temp_iss >> parity;
 
     // If the requested excitation energy corresponds to a bound nuclear
     // state, match it to a known discrete level instead of taking
