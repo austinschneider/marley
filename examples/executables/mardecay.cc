@@ -229,10 +229,6 @@ int main( int argc, char* argv[] ) {
   const auto par_end = parity_sampling_weights.cend();
   std::discrete_distribution< size_t > par_dist( par_begin, par_end );
 
-  // Get the name to use for the output file
-  auto output_file_name = assign_from_json< std::string >( "output_file_name",
-    decays, ok );
-
 ///////////////////////////////////
 
   // Determine the final-state particle PDG codes based on the process type
