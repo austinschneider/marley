@@ -25,16 +25,16 @@ int main( int argc, char* argv[] ) {
   // If the user has not supplied enough command-line arguments, display the
   // standard help message and exit
   if (argc <= 3) { // Change this to 2 to ensure two arguments are passed
-      std::cout << "Usage: " << argv[0] << " INPUT_FILE OUTPUT_FILE CONFIG_FILE\n";
+      std::cout << "Usage: " << argv[0] << " OUTPUT_FILE CONFIG_FILE INPUT_FILES\n";
       return 0;
   }
 
   //// Check whether the output file exists and warn the user before
   //// overwriting it if it does
-  std::ifstream temp_stream( argv[2] );
+  std::ifstream temp_stream( argv[1] );
   if ( temp_stream ) {
    bool overwrite = marley_utils::prompt_yes_no(
-     "Really overwrite " + std::string(argv[2]) + '?');
+     "Really overwrite " + std::string(argv[1]) + '?');
    if ( !overwrite ) {
      std::cout << "Action aborted.\n";
      return 0;
@@ -43,7 +43,7 @@ int main( int argc, char* argv[] ) {
 
   // Create an alternative structure database with a custom set of optical
   // model parameters
-  const std::string rw_om_config_file( argv[3] );
+  const std::string rw_om_config_file( argv[2] );
   auto om_config = marley::JSON::load_file( rw_om_config_file );
   auto rw_config = om_config.at( "opt_mod" );
   marley::StructureDatabase sdb_alt;
@@ -51,7 +51,8 @@ int main( int argc, char* argv[] ) {
 
   // Prepare to read the input file(s)
   std::vector< std::string > input_file_names;
-  for ( int i = 1; i < argc; ++i ) input_file_names.push_back( argv[i] );
+  std::cout << argc << '\n';
+  for ( int i = 3; i < argc; ++i ) input_file_names.push_back( argv[i] );
 // Open the output ASCII file
   //  std::ofstream outfile("weights_test.txt");
     //if (!outfile.is_open()) {
@@ -68,13 +69,12 @@ int main( int argc, char* argv[] ) {
 
     // Temporary object to use for reading in saved events
     HepMC3::GenEvent ev;
-// Create a new ROOT file
-    TFile *output = new
-    TFile(argv[2], "RECREATE");
+  // Create a new ROOT file
+    TFile *output = new TFile(argv[1], "RECREATE");
 
     // Create a new TTree
     TTree *tree = new TTree("msw", "Tree storing weights");
-// Variables to store the values
+    // Variables to store the values
     double weight;
     int event_num = 0;
     // Create branches in the tree
@@ -365,10 +365,10 @@ int main( int argc, char* argv[] ) {
 
       } // decay vertex loop
 
-      std::cout << "  weight = " << weight << '\n';
+    std::cout << "  weight = " << weight << '\n';
     tree->SetBranchAddress("weight", &weight);
-   tree->SetBranchAddress("event_num", &event_num);
-   tree->Fill();
+    tree->SetBranchAddress("event_num", &event_num);
+    tree->Fill();
 // Print the weight that is being saved to the file
            // std::cout << "Weight saved to file for event " << event_num << " = " << weight << '\n';
 // Write the weight and event number to the ASCII file
@@ -377,8 +377,8 @@ int main( int argc, char* argv[] ) {
 
     } // event loop
     // Write the TTree to the ROOT file and close the file
-   output->Write();
-    output->Close();
+  output->Write();
+  output->Close();
     // Close the output ASCII file
     //outfile.close();
   } // file loop
