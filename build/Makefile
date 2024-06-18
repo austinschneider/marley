@@ -264,14 +264,14 @@ $(HEPMC3_SHARED_LIB): $(HEPMC3_OBJECTS)
       USE_ROOT = yes
       ROOT_OBJ_DICT = marley_root_dict.o
 
-      # If we're linking against ROOT, then we need to move the OutputFile.o
-      # and OutputFileAscii.o objects from the MARLEY library to the
+      # If we're linking against ROOT, then we need to move the OutputFile.o,
+      # OutputFileAscii.o, EventFileReader.o objects from the MARLEY library to the
       # MARLEY_ROOT library
-      OBJECTS := $(filter-out OutputFile.o OutputFileAscii.o, $(OBJECTS))
+      OBJECTS := $(filter-out OutputFile.o OutputFileAscii.o EventFileReader.o, $(OBJECTS))
 
       ROOT_SHARED_LIB_LDFLAGS := -l$(ROOT_SHARED_LIB_NAME)
       ROOT_SHARED_LIB_OBJECTS = marley_root.o RootJSONConfig.o OutputFile.o
-      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o OutputFileRoot.o
+      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o OutputFileRoot.o EventFileReader.o
       ROOT_SHARED_LIB_OBJECTS += $(ROOT_OBJ_DICT)
       #ROOT_SHARED_LIB_OBJECTS += RootEventFileReader.o MacroEventFileReader.o
   
