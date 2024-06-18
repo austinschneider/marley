@@ -38,6 +38,7 @@
 // Forward-declare some HepMC3 classes
 namespace HepMC3 {
   class GenEvent;
+  class GenRunInfo;
   class ReaderAscii;
 }
 
@@ -150,6 +151,10 @@ namespace marley {
       /// @details It provides necessary initialization as a workaround to
       /// calling virtual functions in the constructor
       void ensure_initialized();
+
+      /// Helper function for loading the flux-averaged total cross section
+      /// information from the HepMC3 run information
+      void get_flux_averaged_xsec( const HepMC3::GenRunInfo& run_info );
   };
 
 }

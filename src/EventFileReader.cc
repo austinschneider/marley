@@ -91,17 +91,7 @@ bool marley::EventFileReader::deduce_file_format() {
         " ASCII-format HepMC3 file" );
     }
 
-    auto avg_xsec_attr = run_info->attribute< HepMC3::DoubleAttribute >(
-      "NuHepMC.FluxAveragedTotalCrossSection" );
-    if ( !avg_xsec_attr ) {
-      throw marley::Error( "Missing flux-averaged total cross section while"
-        " parsing an ASCII-format HepMC3 file" );
-    }
-
-    // Retrieve the flux-averaged total cross section and convert it back to
-    // natural units (MeV^{-2}) from picobarn
-    flux_avg_tot_xs_ = avg_xsec_attr->value()
-      / ( marley_utils::hbar_c2 * marley_utils::fm2_to_picobarn );
+    this->get_flux_averaged_xsec( *run_info );
 
     format_ = marley::OutputFile::Format::ASCII;
     return true;
@@ -141,8 +131,7 @@ void marley::EventFileReader::initialize() {
       run_info_ = std::make_shared< HepMC3::GenRunInfo >();
       run_info_->read_data( *temp_run_info_data_ );
 
-      // TODO: retrieve this
-      //flux_avg_tot_xs_ = temp_param->GetVal();
+      this->get_flux_averaged_xsec( *run_info_ );
 
       break;
     }
@@ -245,4 +234,20 @@ double marley::EventFileReader::flux_averaged_xsec( bool natural_units ) {
   double result = flux_avg_tot_xs_ * marley_utils::hbar_c2
     * marley_utils::fm2_to_minus40_cm2 * 1e2; // 10^{-42} cm^2
   return result;
+}
+
+void marley::EventFileReader::get_flux_averaged_xsec(
+  const HepMC3::GenRunInfo& run_info )
+{
+  auto avg_xsec_attr = run_info.attribute< HepMC3::DoubleAttribute >(
+    "NuHepMC.FluxAveragedTotalCrossSection" );
+  if ( !avg_xsec_attr ) {
+    throw marley::Error( "Missing flux-averaged total cross section while"
+      " parsing a HepMC3 file" );
+  }
+
+  // Retrieve the flux-averaged total cross section and convert it back to
+  // natural units (MeV^{-2}) from picobarn
+  flux_avg_tot_xs_ = avg_xsec_attr->value()
+    / ( marley_utils::hbar_c2 * marley_utils::fm2_to_picobarn );
 }
