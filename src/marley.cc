@@ -40,14 +40,8 @@
 #include "marley/marley_utils.hh"
 #include "marley/Generator.hh"
 #include "marley/Logger.hh"
+#include "marley/JSONConfig.hh"
 #include "marley/OutputFile.hh"
-
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-  //#include "marley/RootOutputFile.hh"
-#else
-  #include "marley/JSONConfig.hh"
-#endif
 
 // Flag that will alert the main event generation loop that the user has
 // interrupted the program's execution (probably by pressing ctrl+c). This is a
@@ -308,13 +302,8 @@ int main( int argc, char* argv[] ) {
     // Parse the objects from the JSON-based configuration file
     marley::JSON json = marley::JSON::load_file( config_file_name );
 
-    // Process them to get the generator configuration. Enable ROOT support if
-    // it is available.
-    #ifdef USE_ROOT
-      marley::RootJSONConfig jc( json );
-    #else
-      marley::JSONConfig jc( json );
-    #endif
+    // Process them to get the generator configuration
+    marley::JSONConfig jc( json );
 
     // Get the time that the program was started
     std::chrono::system_clock::time_point start_time_point

@@ -149,8 +149,7 @@ ifneq ($(MAKECMDGOALS),uninstall)
   
   OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(SRC_DIR)/*.cc)))
   OBJECTS := $(filter-out marley.o marley_root.o, $(OBJECTS))
-  OBJECTS := $(filter-out marsum.o RootJSONConfig.o, $(OBJECTS))
-  OBJECTS := $(filter-out OutputFileRoot.o, $(OBJECTS))
+  OBJECTS := $(filter-out marsum.o OutputFileRoot.o, $(OBJECTS))
   OBJECTS := $(filter-out MacroEventFileReader.o, $(OBJECTS))
 
   # Get information about the GNU Scientific Library installation
@@ -267,13 +266,14 @@ $(HEPMC3_SHARED_LIB): $(HEPMC3_OBJECTS)
       # If we're linking against ROOT, then we need to move the OutputFile.o,
       # OutputFileAscii.o, EventFileReader.o objects from the MARLEY library to the
       # MARLEY_ROOT library
-      OBJECTS := $(filter-out OutputFile.o OutputFileAscii.o EventFileReader.o, $(OBJECTS))
+      OBJECTS := $(filter-out OutputFile.o OutputFileAscii.o, $(OBJECTS))
+      OBJECTS := $(filter-out EventFileReader.o JSONConfig.o, $(OBJECTS))
 
       ROOT_SHARED_LIB_LDFLAGS := -l$(ROOT_SHARED_LIB_NAME)
-      ROOT_SHARED_LIB_OBJECTS = marley_root.o RootJSONConfig.o OutputFile.o
-      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o OutputFileRoot.o EventFileReader.o
-      ROOT_SHARED_LIB_OBJECTS += $(ROOT_OBJ_DICT)
-      #ROOT_SHARED_LIB_OBJECTS += RootEventFileReader.o MacroEventFileReader.o
+      ROOT_SHARED_LIB_OBJECTS = marley_root.o JSONConfig.o OutputFile.o
+      ROOT_SHARED_LIB_OBJECTS += OutputFileAscii.o OutputFileRoot.o
+      ROOT_SHARED_LIB_OBJECTS += EventFileReader.o $(ROOT_OBJ_DICT)
+      #ROOT_SHARED_LIB_OBJECTS += MacroEventFileReader.o
   
 $(ROOT_OBJ_DICT):
 	$(RM) marley_root_dict*.*

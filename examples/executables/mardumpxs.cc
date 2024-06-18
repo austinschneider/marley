@@ -23,16 +23,11 @@
 #include "marley/DecayScheme.hh"
 #include "marley/Generator.hh"
 #include "marley/JSON.hh"
+#include "marley/JSONConfig.hh"
 #include "marley/NeutrinoSource.hh"
 #include "marley/NuclearReaction.hh"
 #include "marley/StructureDatabase.hh"
 #include "marley/marley_utils.hh"
-
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-#else
-  #include "marley/JSONConfig.hh"
-#endif
 
 namespace {
   // Default settings for the projectile kinetic energy range and number of
@@ -108,11 +103,7 @@ int main(int argc, char* argv[]) {
   std::ofstream out_file( output_file_name );
 
   // Configure a new Generator object
-  #ifdef USE_ROOT
-    marley::RootJSONConfig config( config_file_name );
-  #else
-    marley::JSONConfig config( config_file_name );
-  #endif
+  marley::JSONConfig config( config_file_name );
   marley::Generator gen = config.create_generator();
 
   // Initialize the projectile kinetic energy range and step size to use for

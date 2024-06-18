@@ -29,12 +29,8 @@
 
 // MARLEY includes
 #include "marley/Event.hh"
+#include "marley/JSONConfig.hh"
 #include "marley/Particle.hh"
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-#else
-  #include "marley/JSONConfig.hh"
-#endif
 
 // marg4 includes
 #include "MarleyPrimaryGeneratorAction.hh"
@@ -43,15 +39,8 @@ MarleyPrimaryGeneratorAction::MarleyPrimaryGeneratorAction(
   const std::string& config_file_name) : G4VUserPrimaryGeneratorAction()
 {
   // Create a new marley::Generator object using the settings from the
-  // configuration file. If the USE_ROOT preprocessor macro is defined, then
-  // parse the configuration file using a RootJSONConfig object to make
-  // ROOT-dependent configuration options available (e.g., the use of a "th1"
-  // or "tgraph" neutrino source)
-  #ifdef USE_ROOT
-  marley::RootJSONConfig config( config_file_name );
-  #else
+  // configuration file.
   marley::JSONConfig config( config_file_name );
-  #endif
 
   marley_generator_= config.create_generator();
 }

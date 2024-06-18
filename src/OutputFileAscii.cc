@@ -30,10 +30,6 @@
 #include "marley/Generator.hh"
 #include "marley/JSONConfig.hh"
 
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-#endif
-
 namespace {
 
   constexpr char DUMMY_CHAR = 'a';

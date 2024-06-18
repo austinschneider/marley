@@ -34,16 +34,12 @@
 #endif
 
 // MARLEY includes
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-#else
-  #include "marley/JSONConfig.hh"
-#endif
 #include "marley/Error.hh"
 #include "marley/Event.hh"
 #include "marley/Generator.hh"
 #include "marley/HauserFeshbachDecay.hh"
 #include "marley/JSON.hh"
+#include "marley/JSONConfig.hh"
 #include "marley/FileManager.hh"
 #include "marley/Logger.hh"
 #include "marley/Reaction.hh"
@@ -240,11 +236,7 @@ TEST_CASE( "Events match their underlying distributions", "[physics]" )
   std::string config_file_name = fm.find_file( "test.js", test_data_dir );
 
   // Configure the generator
-  #ifdef USE_ROOT
-    marley::RootJSONConfig config( config_file_name );
-  #else
-    marley::JSONConfig config( config_file_name );
-  #endif
+  marley::JSONConfig config( config_file_name );
 
   marley::Generator gen = config.create_generator();
 

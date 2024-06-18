@@ -27,8 +27,8 @@
 // MARLEY includes
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
+#include "marley/JSONConfig.hh"
 #include "marley/OutputFileRoot.hh"
-#include "marley/RootJSONConfig.hh"
 
 marley::OutputFileRoot::OutputFileRoot( const marley::JSON& output_config )
   : marley::OutputFile( output_config )

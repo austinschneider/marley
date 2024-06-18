@@ -49,10 +49,13 @@ namespace marley {
       InterpMethod get_interpolation_method( const std::string& rule ) const;
       int neutrino_pdg( const std::string& nu ) const;
 
-      inline virtual bool process_extra_source_types(
-        const std::string& /*type*/, const marley::JSON& /*source_spec*/,
-        int /*pdg_code*/, std::unique_ptr<marley::NeutrinoSource>& /*source*/)
-        const;
+      /// @brief Helper function used to define ROOT-based neutrino source
+      /// types
+      /// @detail This function is a no-op when MARLEY is built without
+      /// ROOT support
+      bool process_extra_source_types( const std::string& type,
+        const marley::JSON& source_spec, int pdg_code,
+        std::unique_ptr< marley::NeutrinoSource >& source ) const;
 
       inline const marley::JSON& get_json() const;
       inline void set_json( const marley::JSON& json );
@@ -77,11 +80,5 @@ namespace marley {
 
   inline void marley::JSONConfig::set_json( const marley::JSON& json )
     { json_ = json; }
-
-  inline bool marley::JSONConfig::process_extra_source_types(
-    const std::string& /*type*/, const marley::JSON& /*source_spec*/,
-    int /*pdg_code*/, std::unique_ptr< marley::NeutrinoSource >& /*source*/)
-    const
-  { return false; }
 
 }

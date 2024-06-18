@@ -23,7 +23,6 @@
 
 #ifdef USE_ROOT
   #include "marley/OutputFileRoot.hh"
-  #include "marley/RootJSONConfig.hh"
 #endif
 
 marley::OutputFile::OutputFile( const marley::JSON& config ) {
@@ -48,11 +47,7 @@ marley::OutputFile::OutputFile( const marley::JSON& config ) {
 std::unique_ptr< marley::Generator > marley::OutputFile::restore_generator(
   const marley::JSON& config )
 {
-  #ifdef USE_ROOT
-    marley::RootJSONConfig jc( config );
-  #else
-    marley::JSONConfig jc( config );
-  #endif
+  marley::JSONConfig jc( config );
   auto gen = std::make_unique< marley::Generator >( jc.create_generator() );
   return gen;
 }
