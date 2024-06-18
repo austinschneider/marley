@@ -172,11 +172,11 @@ Please ensure that the gsl-config executable is on your PATH and try again.
   ifndef IGNORE_HEPMC3
     HEPMC3CONFIG := $(shell which HepMC3-config)
     ifeq (, $(shell which HepMC3-config))
-      define hepmc3_warn_message
+      define hepmc3_builtin_message
     Could not find a working HepMC3 installation.
     A built-in HepMC3 library will be used instead.
       endef
-      $(warning "$(hepmc3_warn_message)")
+      $(info "$(hepmc3_builtin_message)")
     else
       # Add the appropriate compilation flags to use the HepMC3 reference
       # implementation

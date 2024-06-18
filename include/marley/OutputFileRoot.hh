@@ -56,6 +56,9 @@ namespace marley {
       /// Opens the owned ROOT file with the correct settings
       virtual void open();
 
+      /// Clears the temporary storage for event data
+      void clear_event_data();
+
       /// TFile object used to manage input/output
       std::unique_ptr< TFile > out_tfile_;
 
@@ -66,6 +69,10 @@ namespace marley {
 
       /// Temporary storage for the events
       std::unique_ptr< HepMC3::GenEventData > temp_event_data_;
+
+      /// Bare pointer to the event data storage (needed for some ROOT
+      /// manipulations)
+      HepMC3::GenEventData* temp_event_data_ptr_ = nullptr;
 
       /// Temporary storage for the run information
       std::unique_ptr< HepMC3::GenRunInfoData > temp_run_info_data_;

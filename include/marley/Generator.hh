@@ -275,6 +275,9 @@ namespace marley {
 
       inline const std::string& json_config() const { return json_config_; }
 
+      inline void set_run_info( const std::shared_ptr< HepMC3::GenRunInfo >&
+        run_info ) { run_info_ = run_info; }
+
     private:
 
       /// @brief Create a Generator using default settings except for
