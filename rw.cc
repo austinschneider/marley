@@ -24,26 +24,26 @@ int main( int argc, char* argv[] ) {
 
   // If the user has not supplied enough command-line arguments, display the
   // standard help message and exit
-  if ( argc <= 1 ) {
-    std::cout << "Usage: " << argv[0] << " INPUT_FILE...\n";
-    return 0;
+  if (argc <= 3) { // Change this to 2 to ensure two arguments are passed
+      std::cout << "Usage: " << argv[0] << " INPUT_FILE OUTPUT_FILE CONFIG_FILE\n";
+      return 0;
   }
 
   //// Check whether the output file exists and warn the user before
   //// overwriting it if it does
-  //std::ifstream temp_stream( argv[1] );
-  //if ( temp_stream ) {
-  //  bool overwrite = marley_utils::prompt_yes_no(
-  //    "Really overwrite " + std::string(argv[1]) + '?');
-  //  if ( !overwrite ) {
-  //    std::cout << "Action aborted.\n";
-  //    return 0;
-  //  }
-  //}
+  std::ifstream temp_stream( argv[2] );
+  if ( temp_stream ) {
+   bool overwrite = marley_utils::prompt_yes_no(
+     "Really overwrite " + std::string(argv[2]) + '?');
+   if ( !overwrite ) {
+     std::cout << "Action aborted.\n";
+     return 0;
+   }
+  }
 
   // Create an alternative structure database with a custom set of optical
   // model parameters
-  const std::string rw_om_config_file( "prc_marley_KDUQFederal/optical_model_kduq_federal_232.js" );
+  const std::string rw_om_config_file( argv[3] );
   auto om_config = marley::JSON::load_file( rw_om_config_file );
   auto rw_config = om_config.at( "opt_mod" );
   marley::StructureDatabase sdb_alt;
@@ -70,7 +70,7 @@ int main( int argc, char* argv[] ) {
     HepMC3::GenEvent ev;
 // Create a new ROOT file
     TFile *output = new
-    TFile("fix_float.root", "RECREATE");
+    TFile(argv[2], "RECREATE");
 
     // Create a new TTree
     TTree *tree = new TTree("msw", "Tree storing weights");
@@ -86,7 +86,6 @@ int main( int argc, char* argv[] ) {
       //if ( event_num % 1000 == 0 )
       std::cout << "Event " << event_num << '\n';
 
-      //double weight = 1.;
       double weight = 1.;
       // Get a vector of pointers to all decay vertices in the event that
       // were handled using the Hauser-Feshbach model
@@ -344,7 +343,22 @@ int main( int argc, char* argv[] ) {
         else {
           w *= width_ec_alt / width_ec;
         }
-
+        // Compare the original and alternative calculations, and print out if they differ
+        // if ( std::abs(width_tot - width_tot_alt) > PRETTY_SMALL ) {
+        //   std::cout << "  Total width mismatch: " << width_tot << " vs. " << width_tot_alt << '\n';
+        // }
+        // if ( std::abs(width_ec - width_ec_alt) > PRETTY_SMALL ) {
+        //   std::cout << "  Exit channel width mismatch: " << width_ec << " vs. " << width_ec_alt << '\n';
+        // }
+        // if ( decayed_to_continuum && std::abs(width_sp - width_sp_alt) > PRETTY_SMALL ) {
+        //   std::cout << "  Spin-parity width mismatch: " << width_sp << " vs. " << width_sp_alt << '\n';
+        //   // Print out the PDG codes of the particles in the decay vertex
+        //   std::cout << "  ";
+        //   for ( const auto& p : in_vec ) std::cout << p->pid() << ' ';
+        //   std::cout << " -> ";
+        //   for ( const auto& p : out_vec ) std::cout << p->pid() << ' ';
+        //   std::cout << '\n';
+        // }
         // Multiply the weight for the current decay vertex into the overall
         // event weight
         weight *= w;
