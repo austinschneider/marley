@@ -27,6 +27,8 @@
 #ifdef USE_ROOT
 // HepMC3 includes
 #include "HepMC3/Data/GenEventData.h"
+#include "HepMC3/Data/GenRunInfoData.h"
+#include "HepMC3/GenRunInfo.h"
 
 // ROOT includes
 #include "TFile.h"
@@ -115,6 +117,13 @@ namespace marley {
       /// @brief Bare pointer to the event data needed for use when setting
       /// the branch address for ROOT I/O
       HepMC3::GenEventData* temp_event_data_ptr_ = nullptr;
+
+      /// @brief Temporary storage for reading back HepMC3 run information from
+      /// a ROOT-format file
+      HepMC3::GenRunInfoData* temp_run_info_data_ = nullptr;
+
+      /// @brief Stores the retrieved run information
+      std::shared_ptr< HepMC3::GenRunInfo > run_info_;
       #endif
 
       /// @brief Flux-averaged total cross section (MeV<sup> -2</sup>) used to

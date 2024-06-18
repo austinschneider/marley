@@ -19,6 +19,7 @@
 
 // HepMC3 includes
 #include "HepMC3/Data/GenEventData.h"
+#include "HepMC3/Data/GenRunInfoData.h"
 #include "HepMC3/Attribute.h"
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenRunInfo.h"
@@ -71,6 +72,22 @@ void marley::OutputFileRoot::write_event( const HepMC3::GenEvent* event ) {
 
   if ( !event ) throw marley::Error( "Null pointer passed to"
     " OutputFileRoot::write_event()" );
+
+  // If the run information hasn't been set, then initialize it and save it
+  auto ev_run_info = event->run_info();
+  if ( !run_info_ && ev_run_info ) {
+    run_info_ = ev_run_info;
+
+    temp_run_info_data_ = std::make_unique< HepMC3::GenRunInfoData >();
+    run_info_->write_data( *temp_run_info_data_ );
+
+    out_tfile_->cd();
+    out_tfile_->WriteObject( temp_run_info_data_.get(),
+      "MARLEY_run_info", "WriteDelete" );
+  }
+  else if ( run_info_ != ev_run_info ) {
+    throw marley::Error( "Unexpected change in MARLEY run information" );
+  }
 
   // Clear out any pre-existing contents from the temporary event storage
   temp_event_data_->particles.clear();

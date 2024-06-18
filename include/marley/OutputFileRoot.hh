@@ -16,20 +16,6 @@
 
 #pragma once
 
-//#include "HepMC3/Data/GenEventData.h"
-//#include "HepMC3/Data/GenRunInfoData.h"
-//// Needed for generating ROOT dictionaries for HepMC3
-//namespace HepMC
-//{
-//typedef HepMC3::GenEventData GenEventData;
-//typedef HepMC3::GenRunInfoData GenRunInfoData ;
-//typedef HepMC3::GenParticleData GenParticleData ;
-//typedef HepMC3::GenVertexData GenVertexData ;
-//typedef HepMC3::FourVector FourVector ;
-//typedef HepMC3::Units Units ;
-//typedef HepMC3::Setup Setup ;
-//}
-
 // Standard library includes
 #include <memory>
 
@@ -42,6 +28,7 @@
 
 namespace HepMC3 {
   class GenEventData;
+  class GenRunInfoData;
 };
 
 namespace marley {
@@ -79,6 +66,12 @@ namespace marley {
 
       /// Temporary storage for the events
       std::unique_ptr< HepMC3::GenEventData > temp_event_data_;
+
+      /// Temporary storage for the run information
+      std::unique_ptr< HepMC3::GenRunInfoData > temp_run_info_data_;
+
+      /// Copy of the run information to check for a mismatch
+      std::shared_ptr< HepMC3::GenRunInfo > run_info_;
   };
 
 }

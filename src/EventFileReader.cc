@@ -134,6 +134,13 @@ void marley::EventFileReader::initialize() {
       temp_event_data_ptr_ = temp_event_data_.get();
       ttree_->SetBranchAddress( "event", &temp_event_data_ptr_ );
 
+      tfile_->GetObject( "MARLEY_run_info", temp_run_info_data_ );
+      if ( !temp_run_info_data_ ) throw marley::Error( "Failed to load"
+        " MARLEY run information from the ROOT file \"" + file_name_ + '\"' );
+
+      run_info_ = std::make_shared< HepMC3::GenRunInfo >();
+      run_info_->read_data( *temp_run_info_data_ );
+
       // TODO: retrieve this
       //flux_avg_tot_xs_ = temp_param->GetVal();
 
@@ -175,6 +182,7 @@ bool marley::EventFileReader::next_event( HepMC3::GenEvent& ev )
 
         ttree_->GetEntry( event_num_ );
         ev.read_data( *temp_event_data_ );
+        ev.set_run_info( run_info_ );
         return true;
       }
 
