@@ -28,16 +28,11 @@
 #include "marley/hepmc3_utils.hh"
 #include "marley/Generator.hh"
 #include "marley/JSON.hh"
+#include "marley/JSONConfig.hh"
 #include "marley/NucleusDecayer.hh"
 #include "marley/OutputFile.hh"
 #include "marley/Parity.hh"
 #include "marley/Reaction.hh"
-
-#ifdef USE_ROOT
-  #include "marley/RootJSONConfig.hh"
-#else
-  #include "marley/JSONConfig.hh"
-#endif
 
 using ProcType = marley::Reaction::ProcessType;
 
@@ -122,11 +117,7 @@ int main( int argc, char* argv[] ) {
   std::string config_file_name( argv[1] );
 
   // Set up the generator using the job configuration file
-  #ifdef USE_ROOT
-    marley::RootJSONConfig jc( config_file_name );
-  #else
-    marley::JSONConfig jc( config_file_name );
-  #endif
+  marley::JSONConfig jc( config_file_name );
 
   marley::Generator gen = jc.create_generator();
   gen.set_up_run_info();
@@ -175,10 +166,26 @@ int main( int argc, char* argv[] ) {
     return 2;
   }
 
-  // Get the initial excitation energy
-  double Ex = assign_from_json< double >( "Ex", decays, ok, -1.0 );
-  if ( Ex < 0. ) {
+  // Decide whether Ex will be sampled for each event or fixed
+  double Ex = 0.; // Excitation energy for the decay event
+  double Ex_min = 0.;
+  double Ex_max = 0.;
+  bool sample_Ex = decays.has_key( "Ex_max" );
+  if ( !sample_Ex ) {
+    // Get the initial excitation energy
+    Ex = assign_from_json< double >( "Ex", decays, ok, -1.0 );
+
+  }
+  else {
+    Ex_min = assign_from_json< double >( "Ex_min", decays, ok, -1.0 );
+    Ex_max = assign_from_json< double >( "Ex_max", decays, ok, -1.0 );
+  }
+
+  if ( Ex < 0. || Ex_min < 0. || Ex_max < 0. ) {
     throw marley::Error( "Negative excitation energy encountered" );
+  }
+  if ( Ex_max < Ex_min ) {
+    throw marley::Error( "Upper Ex bound is less than lower Ex bound" );
   }
 
   // Get two times the initial nuclear spin
@@ -226,6 +233,12 @@ int main( int argc, char* argv[] ) {
 
     // Get access to the MassTable
     const auto& mt = marley::MassTable::Instance();
+
+    // If excitation energy sampling is enabled, then choose a value uniformly
+    // between the bounds
+    if ( sample_Ex ) {
+      Ex = gen.uniform_random_double( Ex_min, Ex_max, true );
+    }
 
     // If the requested excitation energy corresponds to a bound nuclear
     // state, match it to a known discrete level instead of taking
