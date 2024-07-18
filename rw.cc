@@ -1,7 +1,7 @@
 // Standard library includes
 #include <algorithm>
-#include <TFile.h>
-#include <TTree.h>
+//#include <TFile.h>
+//#include <TTree.h>
 // HepMC3 includes
 #include "HepMC3/FourVector.h"
 #include "HepMC3/GenEvent.h"
@@ -54,12 +54,12 @@ int main( int argc, char* argv[] ) {
   std::cout << argc << '\n';
   for ( int i = 3; i < argc; ++i ) input_file_names.push_back( argv[i] );
 // Open the output ASCII file
-  //  std::ofstream outfile("weights_test.txt");
-    //if (!outfile.is_open()) {
-      //  std::cerr << "Unable to open file for writing\n";
-        //return 1;
-   //}
-//outfile << "event_num weight\n";
+    std::ofstream outfile("OUTPUT_FILE");
+    if (!outfile.is_open()) {
+        std::cerr << "Unable to open file for writing\n";
+        return 1;
+   }
+outfile << "event_num weight\n";
   // File loop
   for (const auto& file_name : input_file_names ) {
 
@@ -70,16 +70,16 @@ int main( int argc, char* argv[] ) {
     // Temporary object to use for reading in saved events
     HepMC3::GenEvent ev;
   // Create a new ROOT file
-    TFile *output = new TFile(argv[1], "RECREATE");
+   // TFile *output = new TFile(argv[1], "RECREATE");
 
     // Create a new TTree
-    TTree *tree = new TTree("msw", "Tree storing weights");
+    //TTree *tree = new TTree("msw", "Tree storing weights");
     // Variables to store the values
     double weight;
     int event_num = 0;
     // Create branches in the tree
-    tree->Branch("weight", &weight, "weight/D");
-    tree->Branch("event_num", &event_num, "event_num/I");
+    //tree->Branch("weight", &weight, "weight/D");
+    //tree->Branch("event_num", &event_num, "event_num/I");
     // Event loop
     while ( efr >> ev ) {
 
@@ -366,19 +366,19 @@ int main( int argc, char* argv[] ) {
       } // decay vertex loop
 
     std::cout << "  weight = " << weight << '\n';
-    tree->SetBranchAddress("weight", &weight);
-    tree->SetBranchAddress("event_num", &event_num);
-    tree->Fill();
+    //tree->SetBranchAddress("weight", &weight);
+    //tree->SetBranchAddress("event_num", &event_num);
+   // tree->Fill();
 // Print the weight that is being saved to the file
-           // std::cout << "Weight saved to file for event " << event_num << " = " << weight << '\n';
+            std::cout << "Weight saved to file for event " << event_num << " = " << weight << '\n';
 // Write the weight and event number to the ASCII file
-          //  outfile << event_num << " " << weight << '\n';
+            outfile << event_num << " " << weight << '\n';
     ++event_num;
 
     } // event loop
     // Write the TTree to the ROOT file and close the file
-  output->Write();
-  output->Close();
+  //output->Write();
+//  output->Close();
     // Close the output ASCII file
     //outfile.close();
   } // file loop
