@@ -54,11 +54,16 @@ int main( int argc, char* argv[] ) {
   std::cout << argc << '\n';
   for ( int i = 3; i < argc; ++i ) input_file_names.push_back( argv[i] );
 // Open the output ASCII file
-    std::ofstream outfile("OUTPUT_FILE");
-    if (!outfile.is_open()) {
-        std::cerr << "Unable to open file for writing\n";
-        return 1;
-   }
+    //std::ofstream outfile("OUTPUT_FILE");
+    //if (!outfile.is_open()) {
+        //std::cerr << "Unable to open file for writing\n";
+        //return 1;
+   //}
+    std::ofstream outfile(argv[1]);
+       if (!outfile.is_open()) {
+           std::cerr << "Unable to open file for writing\n";
+           return 1;
+       }
 outfile << "event_num weight\n";
   // File loop
   for (const auto& file_name : input_file_names ) {
@@ -370,9 +375,9 @@ outfile << "event_num weight\n";
     //tree->SetBranchAddress("event_num", &event_num);
    // tree->Fill();
 // Print the weight that is being saved to the file
-            std::cout << "Weight saved to file for event " << event_num << " = " << weight << '\n';
+   std::cout << "Weight saved to file for event " << event_num << " = " << weight << '\n';
 // Write the weight and event number to the ASCII file
-            outfile << event_num << " " << weight << '\n';
+     outfile << event_num << " " << weight << '\n';
     ++event_num;
 
     } // event loop
@@ -380,7 +385,7 @@ outfile << "event_num weight\n";
   //output->Write();
 //  output->Close();
     // Close the output ASCII file
-    //outfile.close();
+    outfile.close();
   } // file loop
 
 return 0;
