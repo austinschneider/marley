@@ -21,9 +21,9 @@
 #include <string>
 #include <vector>
 
+#include "marley/CachedOpticalModel.hh"
 #include "marley/DecayScheme.hh"
 #include "marley/MassTable.hh"
-#include "marley/OpticalModel.hh"
 #include "marley/marley_utils.hh"
 
 namespace marley {
@@ -38,7 +38,7 @@ namespace marley {
   /// <a href="https://en.wikipedia.org/wiki/Numerov%27s_method">Numerov's
   /// method</a> is used to integrate the Schr&ouml;dinger equation during
   /// transmission coefficient and cross section calculations.
-  class KoningDelarocheOpticalModel : public OpticalModel {
+  class KoningDelarocheOpticalModel : public CachedOpticalModel {
 
     public:
 
@@ -56,10 +56,6 @@ namespace marley {
         double fragment_KE_lab, int fragment_pdg, int two_j, int l, int two_s,
         int target_charge = 0 ) override;
 
-      virtual double transmission_coefficient( double total_KE_CM,
-        int fragment_pdg, int two_j, int l, int two_s, int target_charge = 0 )
-        override;
-
       virtual double total_cross_section( double fragment_KE_lab,
         int fragment_pdg, int two_s, size_t l_max, int target_charge = 0 )
         override;
@@ -67,6 +63,10 @@ namespace marley {
       virtual void print( std::ostream& out ) const override;
 
     private:
+
+      virtual double compute_transmission_coefficient( double total_KE_CM,
+        int fragment_pdg, int two_j, int l, int two_s, int target_charge = 0 )
+        override;
 
       /// Total CM frame kinetic energy of both particles
       double total_CM_frame_KE_;

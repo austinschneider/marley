@@ -23,7 +23,7 @@
 #include "marley/Logger.hh"
 
 marley::KoningDelarocheOpticalModel::KoningDelarocheOpticalModel( int Z,
-  int A, const marley::JSON& om_config ) : marley::OpticalModel( Z, A )
+  int A, const marley::JSON& om_config ) : marley::CachedOpticalModel( Z, A )
 {
   // Set the step size (fm) for numerically solving the Schrodinger equation
   // using Numerov's method
@@ -310,7 +310,7 @@ double marley::KoningDelarocheOpticalModel::total_cross_section(
   return xs;
 }
 
-double marley::KoningDelarocheOpticalModel::transmission_coefficient(
+double marley::KoningDelarocheOpticalModel::compute_transmission_coefficient(
   double total_KE_CM, int fragment_pdg, int two_j, int l, int two_s,
   int target_charge )
 {
