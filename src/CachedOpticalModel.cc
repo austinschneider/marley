@@ -15,7 +15,7 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #include "marley/CachedOpticalModel.hh"
-#include "marley/ChebyshevInterpolatingFunction.hh"
+#include "marley/LinearInterpolatingFunction.hh"
 
 // Default to using the cache unless it is explicitly disabled
 bool marley::CachedOpticalModel::USE_CACHE = true;
@@ -48,8 +48,8 @@ double marley::CachedOpticalModel::transmission_coefficient(
     };
 
     auto t_coeff_interp = std::make_shared<
-      marley::ChebyshevInterpolatingFunction >( t_coeff, MIN_TOTAL_KE_CM,
-        MAX_TOTAL_KE_CM, marley::DEFAULT_N_CHEBYSHEV );
+      marley::LinearInterpolatingFunction >( t_coeff, MIN_TOTAL_KE_CM,
+        MAX_TOTAL_KE_CM, marley::DEFAULT_N_LINEAR );
 
     // Compute the interpolated transmission coefficient for the current
     // call to this function

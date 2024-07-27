@@ -25,9 +25,8 @@
 
 namespace marley {
 
-  // Forward-declare the ChebyshevInterpolatingFunction class (used in the
-  // cache)
-  class ChebyshevInterpolatingFunction;
+  // Forward-declare the InterpolatingFunction class (used in the cache)
+  class InterpolatingFunction;
 
   /// @brief Nuclear optical model that caches transmission coefficient
   /// calculations for efficiency
@@ -91,9 +90,9 @@ namespace marley {
         int fragment_pdg, int two_j, int l, int two_s,
         int target_charge = 0 ) = 0;
 
-      /// @brief Saved ChebyshevInterpolatingFunction objects corresponding
+      /// @brief Saved InterpolatingFunction objects corresponding
       /// to previously-encountered transmission coefficient requests
-      std::map< TCKey, std::shared_ptr< ChebyshevInterpolatingFunction > >
+      std::map< TCKey, std::shared_ptr< InterpolatingFunction > >
         tc_cache_;
 
       /// @brief Minimum kinetic energy to use when interacting with the cache

@@ -33,8 +33,8 @@ namespace {
 
 marley::ChebyshevInterpolatingFunction::ChebyshevInterpolatingFunction(
   const std::function<double(double)>& func, double x_min, double x_max,
-  size_t N)
-  : x_min_( x_min ), x_max_( x_max )
+  size_t N )
+  : marley::InterpolatingFunction( x_min, x_max )
 {
   bool ok;
 

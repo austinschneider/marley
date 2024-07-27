@@ -18,25 +18,25 @@
 #include <functional>
 #include <vector>
 
-#include "marley/marley_utils.hh"
+#include "marley/InterpolatingFunction.hh"
 
 namespace marley {
 
   // Default Chebyshev grid size to use (when not using adaptive sizing)
   constexpr size_t DEFAULT_N_CHEBYSHEV = 64u;
 
-  /// @brief Approximate representation of a 1D continuous function
-  class ChebyshevInterpolatingFunction {
+  /// @brief Approximates a 1D function using Chebyshev points
+  class ChebyshevInterpolatingFunction : public InterpolatingFunction {
 
     public:
 
       // N = 0 triggers adaptive grid sizing
-      ChebyshevInterpolatingFunction(const std::function<double(double)>& func,
-        double x_min, double x_max, size_t N = 0);
+      ChebyshevInterpolatingFunction( const std::function<double(double)>& func,
+        double x_min, double x_max, size_t N = 0 );
 
       /// @brief Approximates the represented function using the barycentric
       /// formula
-      inline double evaluate(double x) const {
+      inline double evaluate( double x ) const override {
         double numer = 0.;
         double denom = 0.;
         double w_j = -1.;
@@ -86,12 +86,6 @@ namespace marley {
 
       /// @brief Grid size parameter (N + 1 total points)
       size_t N_;
-
-      /// @brief Lower edge of the grid
-      double x_min_;
-
-      /// @brief Upper edge of the grid
-      double x_max_;
 
       /// @brief Approximate integral of the function on [x_min_, x_max_]
       double integral_;
