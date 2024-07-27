@@ -80,6 +80,10 @@ namespace marley {
         int target_charge_ = 0;
       };
 
+      inline static void set_use_cache( bool use_it ) {
+        USE_CACHE = use_it;
+      }
+
     protected:
 
       /// @brief Do the actual calculation of the transmission coefficient
@@ -96,6 +100,10 @@ namespace marley {
       static constexpr double MIN_TOTAL_KE_CM = 1e-10; // MeV
       /// @brief Maximum kinetic energy to use when interacting with the cache
       static constexpr double MAX_TOTAL_KE_CM = 100.; // MeV
+
+      /// @brief Boolean switch that allows global enabling/disabling of the
+      /// cache, which is used by default
+      static bool USE_CACHE;
   };
 
 }

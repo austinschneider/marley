@@ -17,13 +17,18 @@
 #include "marley/CachedOpticalModel.hh"
 #include "marley/ChebyshevInterpolatingFunction.hh"
 
+// Default to using the cache unless it is explicitly disabled
+bool marley::CachedOpticalModel::USE_CACHE = true;
+
 double marley::CachedOpticalModel::transmission_coefficient(
   double total_KE_CM, int fragment_pdg, int two_j, int l, int two_s,
   int target_charge )
 {
   // If we're in the region of kinetic energies where we use the cache, then
   // check whether we've encountered this combination of quantum numbers before
-  if ( total_KE_CM >= MIN_TOTAL_KE_CM && total_KE_CM <= MAX_TOTAL_KE_CM ) {
+  if ( USE_CACHE && total_KE_CM >= MIN_TOTAL_KE_CM
+    && total_KE_CM <= MAX_TOTAL_KE_CM )
+  {
     TCKey temp_key( fragment_pdg, two_j, l, two_s, target_charge );
     const auto cache_iter = tc_cache_.find( temp_key );
 
