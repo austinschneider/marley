@@ -277,6 +277,12 @@ namespace marley {
 
       inline const std::string& json_config() const { return json_config_; }
 
+      inline const std::shared_ptr< HepMC3::GenRunInfo >& run_info() const
+        { return run_info_; }
+
+      /// @brief Associates the owned GenRunInfo object with the input event
+      void assign_run_info( HepMC3::GenEvent& event ) const;
+
       inline void set_run_info( const std::shared_ptr< HepMC3::GenRunInfo >&
         run_info ) { run_info_ = run_info; }
 

@@ -137,13 +137,7 @@ std::shared_ptr< HepMC3::GenEvent > marley::Generator::create_event() {
   // (4) If needed, rotate the event to match the desired projectile direction
   rotator_.process_event( *ev, *this );
 
-  // (5) Associate the owned run information with the event
-  ev->set_run_info( run_info_ );
-
-  // (6) Calculate any needed weight(s) for the event
-  weighter_->process_event( *ev, *this );
-
-  // (7) Finish adding metadata to the event object
+  // (5) Finish adding metadata to the event object
   this->finish_event_metadata( *ev );
 
   // Return the completed event object
@@ -716,13 +710,7 @@ std::shared_ptr< HepMC3::GenEvent > marley::Generator::create_event(
   // Rotate the coordinate system of the event if needed
   my_rotator.process_event( *ev, *this );
 
-  // (5) Associate the owned run information with the event
-  ev->set_run_info( run_info_ );
-
-  // (6) Calculate any needed weight(s) for the event
-  weighter_->process_event( *ev, *this );
-
-  // (7) Finish adding metadata to the event object
+  // (5) Finish adding metadata to the event object
   this->finish_event_metadata( *ev );
 
   // Return the completed event object
@@ -820,6 +808,12 @@ void marley::Generator::set_up_run_info() {
 
 void marley::Generator::finish_event_metadata( HepMC3::GenEvent& ev ) {
 
+  // Associate the owned run information with the event
+  this->assign_run_info( ev );
+
+  // Calculate any needed weight(s) for the event
+  weighter_->process_event( ev, *this );
+
   // Add the generator state after the event was completed as a string
   // attribute. This allows resuming an interrupted job from where it left off.
   ev.add_attribute( "MARLEY.GeneratorState",
@@ -838,4 +832,8 @@ void marley::Generator::finish_event_metadata( HepMC3::GenEvent& ev ) {
 
 void marley::Generator::set_json_config( const marley::JSON& jc ) {
   json_config_ = jc.dump_string();
+}
+
+void marley::Generator::assign_run_info( HepMC3::GenEvent& event ) const {
+  event.set_run_info( run_info_ );
 }

@@ -337,7 +337,8 @@ int main( int argc, char* argv[] ) {
     marley::NucleusDecayer nd;
     nd.process_event( *event, gen );
 
-    // Add a little metadata to the event (attach run info, etc.)
+    // Add final metadata to the event (attach run info,
+    // assign event weights, etc.)
     gen.finish_event_metadata( *event );
 
     // We're done, write the event to the output file(s)

@@ -182,6 +182,9 @@ marley::Generator marley::JSONConfig::create_generator() const
     }
   }
 
+  // Save a copy of the JSON settings used to configure the generator
+  gen.set_json_config( json_ );
+
   // Skip the rest of initialization if we've disabled all reactions.
   // This can be used to partially initialize the Generator in unusual
   // situations.
@@ -293,9 +296,6 @@ marley::Generator marley::JSONConfig::create_generator() const
   // same time). An exception will be thrown if no neutrinos can interact.
   gen.dont_normalize_E_pdf_ = false;
   gen.normalize_E_pdf();
-
-  // Save a copy of the JSON settings used to configure the generator
-  gen.set_json_config( json_ );
 
   // Now we're all ready to go. Log the flux-averaged total cross section
   // value before returning the fully-configured generator.
