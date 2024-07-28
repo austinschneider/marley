@@ -45,31 +45,17 @@ marley::OMPWeightCalculator::OMPWeightCalculator( const marley::JSON& config )
       " of marley::OMPWeightCalculator" );
   }
 
-  if ( !config.has_key("omp_file") ) {
-    throw marley::Error( "Missing \"omp_file\" key in marley::OMPWeight"
+  if ( !config.has_key("opt_mod") ) {
+    throw marley::Error( "Missing \"opt_mod\" key in marley::OMPWeight"
       "Calculator JSON configuration" );
   }
 
-  const auto& in_file_json = config.at( "omp_file" );
-  if ( !in_file_json.is_string() ) {
-    throw marley::Error( "Non-string associated with \"omp_file\" key in"
+  // Load the JSON configuration for the optical model parameters
+  const auto& om_config = config.at( "opt_mod" );
+  if ( !om_config.is_object() ) {
+    throw marley::Error( "Non-object associated with \"opt_mod\" key in"
       " marley::OMPWeightCalculator JSON configuration" );
   }
-
-  // Find the input JSON file containing the optical model parameters
-  std::string file_name = in_file_json.to_string();
-  const auto& fm = marley::FileManager::Instance();
-
-  std::string full_file_name = fm.find_file( file_name );
-  if ( full_file_name.empty() ) {
-    throw marley::Error( "Could not locate the optical model configuration"
-      " file \""+ file_name + "\". Please check that the file name is spelled"
-      " correctly and that the file is in a folder on the MARLEY"
-      " search path." );
-  }
-
-  // Load the JSON configuration for the optical model parameters
-  auto om_config = marley::JSON::load_file( full_file_name );
 
   // Create a structure database with a custom set of optical model parameters
   sdb_ = std::make_shared< marley::StructureDatabase >();
