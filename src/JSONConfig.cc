@@ -30,6 +30,7 @@
 #include "marley/NuclearReaction.hh"
 #include "marley/Logger.hh"
 #include "marley/StructureDatabase.hh"
+#include "marley/Weighter.hh"
 
 #ifdef USE_ROOT
 #include "marley/marley_root.hh"
@@ -166,6 +167,7 @@ marley::Generator marley::JSONConfig::create_generator() const
   prepare_neutrino_source( gen );
   prepare_reactions( gen );
   prepare_target( gen );
+  prepare_weights( gen );
 
   // If the user has disabled nuclear de-excitations, then set the
   // flag appropriately.
@@ -994,4 +996,22 @@ bool marley::JSONConfig::process_extra_source_types(
 #endif
 
   return false;
+}
+
+void marley::JSONConfig::prepare_weights( marley::Generator& gen ) const {
+
+  // If the user has specified settings under the "weights" key in the
+  // configuration file, then use those
+  marley::JSON wgt_config;
+  if ( json_.has_key("weights") ) {
+    wgt_config = json_.at( "weights" );
+  }
+  // Otherwise, default to an empty array (no configured weight calculators)
+  else {
+    wgt_config = marley::JSON::array();
+  }
+
+  // Initialize the Weighter object owned by the generator
+  gen.weighter_ = std::make_shared< marley::Weighter >( wgt_config );
+
 }

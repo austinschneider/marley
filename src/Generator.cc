@@ -36,6 +36,7 @@
 #include "marley/NucleusDecayer.hh"
 #include "marley/Reaction.hh"
 #include "marley/StructureDatabase.hh"
+#include "marley/Weighter.hh"
 
 // The default constructor uses the system time as the seed and a
 // default-constructured monoenergetic neutrino source. No reactions are
@@ -136,7 +137,13 @@ std::shared_ptr< HepMC3::GenEvent > marley::Generator::create_event() {
   // (4) If needed, rotate the event to match the desired projectile direction
   rotator_.process_event( *ev, *this );
 
-  // (5) Finish adding metadata to the event object
+  // (5) Associate the owned run information with the event
+  ev->set_run_info( run_info_ );
+
+  // (6) Calculate any needed weight(s) for the event
+  weighter_->process_event( *ev, *this );
+
+  // (7) Finish adding metadata to the event object
   this->finish_event_metadata( *ev );
 
   // Return the completed event object
@@ -532,7 +539,7 @@ double marley::Generator::inverse_transform_sample(
 }
 
 double marley::Generator::inverse_transform_sample(
-  const marley::ChebyshevInterpolatingFunction& cdf, double xmin, double xmax,
+  const marley::InterpolatingFunction& cdf, double xmin, double xmax,
   double bisection_tolerance )
 {
   // Sample a probability value uniformly on [0, 1]
@@ -709,7 +716,13 @@ std::shared_ptr< HepMC3::GenEvent > marley::Generator::create_event(
   // Rotate the coordinate system of the event if needed
   my_rotator.process_event( *ev, *this );
 
-  // (5) Finish adding metadata to the event object
+  // (5) Associate the owned run information with the event
+  ev->set_run_info( run_info_ );
+
+  // (6) Calculate any needed weight(s) for the event
+  weighter_->process_event( *ev, *this );
+
+  // (7) Finish adding metadata to the event object
   this->finish_event_metadata( *ev );
 
   // Return the completed event object
@@ -784,7 +797,8 @@ void marley::Generator::set_up_run_info() {
   marley_hepmc3::prepare_particle_status_metadata( *run_info_ );
 
   // G.R.7
-  run_info_->set_weight_names( { "CV" } );
+  const auto& wgt_names = weighter_->get_weight_names();
+  run_info_->set_weight_names( wgt_names );
 
   // G.R.8
   marley_hepmc3::prepare_non_standard_pdg_code_metadata( *run_info_ );
@@ -805,9 +819,6 @@ void marley::Generator::set_up_run_info() {
 }
 
 void marley::Generator::finish_event_metadata( HepMC3::GenEvent& ev ) {
-
-  // Associate the owned run information with the event
-  ev.set_run_info( run_info_ );
 
   // Add the generator state after the event was completed as a string
   // attribute. This allows resuming an interrupted job from where it left off.

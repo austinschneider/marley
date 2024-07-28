@@ -43,6 +43,7 @@ namespace marley {
       void prepare_reactions( marley::Generator& gen ) const;
       void prepare_structure( marley::Generator& gen ) const;
       void prepare_target( marley::Generator& gen ) const;
+      void prepare_weights( marley::Generator& gen ) const;
 
       void update_logger_settings() const;
 

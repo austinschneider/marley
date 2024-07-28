@@ -25,6 +25,7 @@
 
 // MARLEY includes
 #include "marley/GammaStrengthFunctionModel.hh"
+#include "marley/InterpolatingFunction.hh"
 #include "marley/NeutrinoSource.hh"
 #include "marley/NuclearReaction.hh"
 #include "marley/LevelDensityModel.hh"
@@ -46,6 +47,7 @@ namespace marley {
   class ChebyshevInterpolatingFunction;
   class JSON;
   class JSONConfig;
+  class Weighter;
 
   /// @brief The MARLEY Event generator
   class Generator {
@@ -106,7 +108,7 @@ namespace marley {
       /// @param xmax Upper bound of the sampling interval
       /// @return Sampled value of x
       double inverse_transform_sample(
-        const marley::ChebyshevInterpolatingFunction& cdf,
+        const marley::InterpolatingFunction& cdf,
         double xmin, double xmax, double bisection_tolerance = 1e-12);
 
       /// @brief Sample from a given 1D probability density function f(x) on
@@ -413,6 +415,9 @@ namespace marley {
       /// @brief Sets the saved string copy of the JSON configuration used to
       /// initialize the generator
       void set_json_config( const marley::JSON& jc );
+
+      /// @brief Manages event weight(s) and their names
+      std::shared_ptr< Weighter > weighter_;
   };
 
   // Inline function definitions
