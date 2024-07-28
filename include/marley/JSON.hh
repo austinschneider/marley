@@ -36,6 +36,7 @@
 // MARLEY includes
 #include "marley/marley_utils.hh"
 #include "marley/Error.hh"
+#include "marley/FileManager.hh"
 #include "marley/Logger.hh"
 
 namespace marley {
@@ -986,6 +987,42 @@ namespace marley {
       return null;
     }
 
+    JSON parse_include( std::istream& in ) {
+      std::string s( 1, '#' );
+      for (size_t i = 0; i < 9; ++i) s += in.get();
+      if ( s != "#include:\"") {
+        throw marley::Error( "JSON include: Expected 'include:\"', found '"
+          + s + '\'' );
+        return JSON::make( JSON::DataType::Null );
+      }
+
+      // Parse the included file name into a temporary JSON object, then find
+      // the full path to the file
+      JSON file_name_json = parse_string( in );
+      std::string file_name = file_name_json.to_string();
+
+      const auto& fm = marley::FileManager::Instance();
+      std::string full_file_name = fm.find_file( file_name );
+
+      if ( full_file_name.empty() ) {
+        throw marley::Error( "Could not locate the included JSON file \""
+          + file_name + "\". Please check that the file name is spelled"
+          " correctly and that the file is in a folder on the MARLEY"
+          " search path." );
+      }
+
+      // Open the file for reading and check that it is ready to use
+      std::ifstream included_file_stream( full_file_name );
+      if ( !included_file_stream.good() ) {
+        throw marley::Error( "Could not read from the included JSON file \""
+          + full_file_name + '\"' );
+      }
+
+      // Use a recursive call to parse_next() to interpret the JSON in the
+      // file, allowing for the possibility of nested #include commands
+      return parse_next( included_file_stream );
+    }
+
     JSON parse_next( std::istream& in ) {
       char value = get_next_char( in );
       switch(value) {
@@ -995,6 +1032,7 @@ namespace marley {
         case 't' :
         case 'f' : return parse_bool(in, value);
         case 'n' : return parse_null(in);
+        case '#' : return parse_include(in);
         default  :
           if ((value <= '9' && value >= '0') || value == '-')
             return parse_number(in, value);
