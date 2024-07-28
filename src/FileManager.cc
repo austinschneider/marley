@@ -66,6 +66,7 @@ marley::FileManager::FileManager() {
   else {
     default_search_path_ = marley_dir_ + "/data";
     default_search_path_ += ':' + marley_dir_ + "/data/react";
+    default_search_path_ += ':' + marley_dir_ + "/data/optical_model";
     default_search_path_ += ':' + marley_dir_ + "/data/structure";
   }
 
