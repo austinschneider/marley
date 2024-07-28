@@ -36,10 +36,13 @@ namespace {
 }
 
 // Define static data members of the StructureDatabase class
-std::map< int, std::pair<int, marley::Parity> >
+std::map< int, std::pair< int, marley::Parity > >
   marley::StructureDatabase::jpi_table_;
 
 std::map<int, marley::Fragment> marley::StructureDatabase::fragment_table_;
+
+std::unordered_map<int, std::unique_ptr< marley::DecayScheme > >
+  marley::StructureDatabase::decay_scheme_table_;
 
 // Name of the data file which will be used to read in the ground-state nuclear
 // spin-parity values

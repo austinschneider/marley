@@ -195,7 +195,7 @@ namespace marley {
 
       /// @brief Lookup table for marley::DecayScheme objects.
       /// @details Keys are PDG codes, values are unique_ptrs to decay schemes.
-      std::unordered_map<int, std::unique_ptr<marley::DecayScheme> >
+      static std::unordered_map<int, std::unique_ptr<marley::DecayScheme> >
         decay_scheme_table_;
 
       /// @brief Lookup table for marley::OpticalModel objects.
