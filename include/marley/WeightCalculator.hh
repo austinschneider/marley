@@ -13,6 +13,7 @@
 //
 // Please respect the MCnet academic usage guidelines. See GUIDELINES
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
+#pragma once
 
 // Standard library includes
 #include <string>

@@ -21,6 +21,7 @@
 #include "marley/Error.hh"
 #include "marley/Generator.hh"
 #include "marley/JSON.hh"
+#include "marley/OMPWeightCalculator.hh"
 #include "marley/WeightCalculator.hh"
 #include "marley/Weighter.hh"
 
@@ -64,6 +65,10 @@ marley::Weighter::Weighter( const marley::JSON& config ) {
     if ( type == "trivial" ) {
       auto twc = std::make_shared< marley::TrivialWeightCalculator >( obj );
       wc = std::static_pointer_cast< marley::WeightCalculator >( twc );
+    }
+    else if ( type == "optical_model" ) {
+      auto omp_wc = std::make_shared< marley::OMPWeightCalculator >( obj );
+      wc = std::static_pointer_cast< marley::WeightCalculator >( omp_wc );
     }
     // TODO: add more options here
     else {
