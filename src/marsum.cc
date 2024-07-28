@@ -41,7 +41,7 @@ int main( int argc, char* argv[] ) {
 
   // If the user has not supplied enough command-line arguments, display the
   // standard help message and exit
-  if (argc <= 2) {
+  if ( argc <= 2 ) {
     std::cout << "Usage: " << argv[0] << " OUTPUT_FILE INPUT_FILE...\n";
     return 0;
   }
@@ -61,9 +61,14 @@ int main( int argc, char* argv[] ) {
   int np; // number of de-excitation products (final-state particles other
           // than the ejectile and residue)
 
-  // Inpormation about each of the other final-state particles
+  // Information about each of the other final-state particles
   std::vector<int> PDGs;
   std::vector<double> Es, KEs, pXs, pYs, pZs;
+
+  // Event weights
+  double cv_weight; // Central-value weight (normally unity, required by
+                    // NuHepMC standard)
+  std::vector< double > other_weights; // Other user-defined weights
 
   // Check whether the output file exists and warn the user before
   // overwriting it if it does
@@ -128,6 +133,10 @@ int main( int argc, char* argv[] ) {
   // Flux-averaged total cross section
   out_tree->Branch( "xsec", &flux_avg_tot_xsec, "xsec/D" );
 
+  // Event weights
+  out_tree->Branch( "cv_weight", &cv_weight, "cv_weight/D" );
+  out_tree->Branch( "other_weights", &other_weights );
+
   // Prepare to read the input file(s)
   std::vector<std::string> input_file_names;
   for ( int i = 2; i < argc; ++i ) input_file_names.push_back( argv[i] );
@@ -142,9 +151,34 @@ int main( int argc, char* argv[] ) {
     // Temporary object to use for reading in saved events
     HepMC3::GenEvent ev;
 
+    // Stores the number of elements expected in the other_weights vector
+    // (determined on the first iteration of the event loop below)
+    int num_other_weights = 0;
+
     // Event loop
     int event_num = 0;
     while ( efr >> ev ) {
+
+      // Write the vector of custom weight names to the output file on the
+      // first iteration of the event loop. We only need to do this once since
+      // the list is stored in the run information and is common to all events.
+      if ( event_num == 0 ) {
+        // TODO: add error handling for when the number of weights changes,
+        // indicating that the events have inconsistent run information
+        auto run_info = ev.run_info();
+        auto wgt_names = run_info->weight_names();
+
+        // Drop the first weight name since it will always be the central-value
+        // weight, which is stored separately in the output TTree
+        wgt_names.erase( wgt_names.begin() );
+
+        // Store the names in the output TFile
+        out_tfile.WriteObject( &wgt_names,
+          "MARLEY_other_weight_names", "WriteDelete" );
+
+        // Record the expected number of other (i.e., non-CV) weights
+        num_other_weights = wgt_names.size();
+      }
 
       if ( event_num % 1000 == 0 ) std::cout << "Event " << event_num << '\n';
 
@@ -252,6 +286,16 @@ int main( int argc, char* argv[] ) {
       out_tree->SetBranchAddress( "pyp", pYs.data() );
       out_tree->SetBranchAddress( "pzp", pZs.data() );
 
+      // Make a copy of the vector of weights for the current event
+      other_weights = ev.weights();
+
+      // Drop the first element and store it in the central-value weight
+      // instead
+      cv_weight = other_weights.front();
+      other_weights.erase( other_weights.begin() );
+
+      // All variables are ready. Fill the output TTree and advance to the next
+      // input event
       out_tree->Fill();
 
       ++event_num;
