@@ -294,8 +294,12 @@ namespace marley {
       /// otherwise complete event
       void finish_event_metadata( HepMC3::GenEvent& ev );
 
+      /// @brief Get a const reference to the owned Weighter object
       inline const marley::Weighter& get_weighter() const
         { return *weighter_; }
+
+      /// @brief Get a non-const reference to the owned Weighter object
+      inline marley::Weighter& get_weighter() { return *weighter_; }
 
     private:
 

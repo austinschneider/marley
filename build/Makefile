@@ -391,6 +391,12 @@ mardecay: $(MARLEY_LIBS)
 	cp ../examples/executables/build/mardecay .
 	$(RM) ../examples/executables/build/mardecay
 
+marreweight: $(MARLEY_LIBS)
+	$(RM) ../examples/executables/build/marreweight
+	cd ../examples/executables/build && $(MAKE) marreweight
+	cp ../examples/executables/build/marreweight .
+	$(RM) ../examples/executables/build/marreweight
+
 .PHONY: docs clean install uninstall
 
 doxygen:
@@ -406,7 +412,8 @@ docs:
 clean:
 	$(RM) *.$(SHARED_LIB_SUFFIX) *.o marley_root_dict*.* marley
 	$(RM) -rf *.dSYM marsum mroot $(TEST_EXECUTABLE) marg4
-	$(RM) -rf marprint mardumpxs mardecay marley-config ../doxygen/html/*
+	$(RM) -rf marprint mardumpxs mardecay marreweight
+	$(RM) -rf marley-config ../doxygen/html/*
 	$(RM) -rf ../docs/_build/*
 
 install: marley
