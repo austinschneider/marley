@@ -30,14 +30,11 @@
 const std::string marley::Weighter::CV_WEIGHT_NAME = "CV";
 
 marley::Weighter::Weighter( const marley::JSON& config ) {
+
   // Always create a trivial weight calculator to handle the central-value
   // weights, and add it to the vector of owned calculators
-  marley::JSON temp_js;
-  temp_js[ "name" ] = CV_WEIGHT_NAME;
-  auto cv_wgt = std::make_shared< marley::TrivialWeightCalculator >( temp_js );
-  calc_vec_.push_back(
-    std::static_pointer_cast< marley::WeightCalculator >( cv_wgt )
-  );
+  auto cv_wgt = make_cv_weight_calc();
+  calc_vec_.push_back( cv_wgt );
 
   // Now parse the JSON configuration to instantiate any other requested
   // weight calculators
@@ -92,7 +89,7 @@ marley::Weighter::Weighter( const marley::JSON& config ) {
 void marley::Weighter::process_event( HepMC3::GenEvent& event,
   marley::Generator& gen )
 {
-  // Get non-const access to the vector of event weights
+  // Get non-const access to the vector of weights in the input event
   auto& weights_vec = event.weights();
   size_t num_weights = weights_vec.size();
 
@@ -104,9 +101,10 @@ void marley::Weighter::process_event( HepMC3::GenEvent& event,
   }
 
   // Evaluate all configured weights and store the results in the event
+  auto temp_weights = compute_weights( event, gen );
+
   for ( size_t w = 0u; w < num_weights; ++w ) {
-    const auto& weight_calc = calc_vec_.at( w );
-    double wgt = weight_calc->weight( event, gen );
+    double wgt = temp_weights.at( w );
 
     // Preserve any pre-existing event weights by multiplying the
     // current values in the event by the calculated result
@@ -114,6 +112,18 @@ void marley::Weighter::process_event( HepMC3::GenEvent& event,
     evw *= wgt;
   }
 
+}
+
+std::vector< double > marley::Weighter::compute_weights(
+  HepMC3::GenEvent& event, marley::Generator& gen ) const
+{
+  // Evaluate all configured weights and store the results in the output vector
+  std::vector< double > weights;
+  for ( const auto& weight_calc : calc_vec_ ) {
+    double wgt = weight_calc->weight( event, gen );
+    weights.push_back( wgt );
+  }
+  return weights;
 }
 
 std::vector< std::string > marley::Weighter::get_weight_names() const {
@@ -124,4 +134,43 @@ std::vector< std::string > marley::Weighter::get_weight_names() const {
     names.push_back( wgt_calc->name() );
   }
   return names;
+}
+
+void marley::Weighter::set_use_cv_weight( bool use_it ) {
+  // Determine whether or not the CV weight is currently enabled by
+  // checking the first element of the vector of weight calculators
+  bool currently_using = false;
+  if ( !calc_vec_.empty() ) {
+    auto first_calc_name = calc_vec_.front()->name();
+    currently_using = ( first_calc_name == marley::Weighter::CV_WEIGHT_NAME );
+  }
+
+  // If the requested setting matches the current state, return without
+  // doing anything
+  if ( currently_using == use_it ) return;
+
+  // If we need to add it, then put a TrivialWeightCalculator with the
+  // correct name at the start of the vector
+  else if ( use_it ) {
+    auto cv_wgt_calc = make_cv_weight_calc();
+    calc_vec_.insert( calc_vec_.begin(), cv_wgt_calc );
+    return;
+  }
+
+  // If we need to remove it, then do so
+  else {
+    calc_vec_.erase( calc_vec_.begin() );
+  }
+}
+
+// Helper function to construct a trivial weight calculator to manage
+// the central-value weight assignment
+std::shared_ptr< marley::WeightCalculator > marley::Weighter
+  ::make_cv_weight_calc()
+{
+  marley::JSON temp_js;
+  temp_js[ "name" ] = marley::Weighter::CV_WEIGHT_NAME;
+  auto cv_wgt = std::make_shared< marley
+    ::TrivialWeightCalculator >( temp_js );
+  return std::static_pointer_cast< marley::WeightCalculator >( cv_wgt );
 }

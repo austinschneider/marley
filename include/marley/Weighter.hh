@@ -40,9 +40,15 @@ namespace marley {
       virtual void process_event( HepMC3::GenEvent& event,
         marley::Generator& gen ) override;
 
+      std::vector< double > compute_weights( HepMC3::GenEvent& event,
+        marley::Generator& gen ) const;
+
       /// @brief Returns the names of the weights associated with all
       /// configured weight calculators
       std::vector< std::string > get_weight_names() const;
+
+      /// @brief Toggles inclusion of the central-value weight
+      void set_use_cv_weight( bool use_it );
 
     protected:
 
@@ -53,6 +59,10 @@ namespace marley {
       /// @brief Owned vector of weight calculators used to actually compute
       /// weights
       std::vector< std::shared_ptr< WeightCalculator > > calc_vec_;
+
+      /// @brief Helper function to create the weight calculator that
+      /// handles the central-value weights during event generation
+      std::shared_ptr< marley::WeightCalculator > make_cv_weight_calc();
   };
 
 }

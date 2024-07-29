@@ -294,6 +294,9 @@ namespace marley {
       /// otherwise complete event
       void finish_event_metadata( HepMC3::GenEvent& ev );
 
+      inline const marley::Weighter& get_weighter() const
+        { return *weighter_; }
+
     private:
 
       /// @brief Create a Generator using default settings except for
