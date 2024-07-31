@@ -24,7 +24,7 @@
 namespace marley {
 
   /// @brief Default number of grid points to use
-  constexpr size_t DEFAULT_N_LINEAR = 1000u;
+  constexpr size_t DEFAULT_N_LINEAR = 200u;
 
   /// @brief Approximates a 1D function using linear interpolation on a grid
   /// of regularly-spaced points
