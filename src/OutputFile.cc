@@ -20,9 +20,9 @@
 #include "marley/JSONConfig.hh"
 #include "marley/OutputFile.hh"
 #include "marley/OutputFileAscii.hh"
-#include "marley/OutputFilePlainRoot.hh"
 
 #ifdef USE_ROOT
+  #include "marley/OutputFilePlainRoot.hh"
   #include "marley/OutputFileRoot.hh"
 #endif
 
