@@ -41,8 +41,10 @@ constexpr int TARGET_NET_CHARGE = 0;
 
 // List of nuclear processes to consider. Other processes will not be
 // considered by this program.
-constexpr std::array< ProcType, 3 > nuclear_proc_types
-  = { ProcType::NeutrinoCC, ProcType::AntiNeutrinoCC, ProcType::NC };
+constexpr std::array< ProcType, 6 > nuclear_proc_types
+  = { ProcType::NeutrinoCC_Discrete, ProcType::AntiNeutrinoCC_Discrete,
+      ProcType::NC_Discrete, ProcType::NeutrinoCC_Continuum,
+      ProcType::AntiNeutrinoCC_Continuum, ProcType::NC_Continuum };
 
 // Helper function that creates an event object containing the nucleus to be
 // de-excited
@@ -150,10 +152,10 @@ int main( int argc, char* argv[] ) {
   int Ai = assign_from_json< int >( "target_A", decays, ok );
 
   // Get the process type for the primary 2 --> 2 reaction to assume.
-  // If it is absent, assume a NC process.
+  // If it is absent, assume a NC continuum process.
   auto proc_type = static_cast< ProcType >(
     assign_from_json< int >( "proc_type", decays, ok,
-      static_cast<int>(ProcType::NC) )
+      static_cast<int>(ProcType::NC_Continuum) )
   );
 
   auto iter = std::find( nuclear_proc_types.cbegin(),
