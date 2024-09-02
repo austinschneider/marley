@@ -50,6 +50,11 @@ namespace marley {
       /// @brief Toggles inclusion of the central-value weight
       void set_use_cv_weight( bool use_it );
 
+      /// @brief Provides non-const access to the owned vector
+      /// of weight calculators
+      inline std::vector< std::shared_ptr< WeightCalculator > >&
+        get_weight_calculators() { return calc_vec_; }
+
     protected:
 
       /// @brief Reserved name for the central-value weights (required for

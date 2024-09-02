@@ -61,7 +61,7 @@ marley::OutputFileAscii::OutputFileAscii( const marley::JSON& output_config )
   : marley::OutputFile( output_config )
 {
   format_ = Format::ASCII;
-  
+
   this->open();
   reader_ = std::make_shared< HepMC3::ReaderAscii >( stream_ );
   writer_ = std::make_shared< HepMC3::WriterAscii >( stream_ );
