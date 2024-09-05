@@ -91,11 +91,18 @@ namespace marley {
 
       void optimize( int pdg_a, double max_KEa );
 
-    protected:
+      inline void unoptimize() { optimization_map_.clear(); }
 
-      // Helper function for integral that does the actual integration
+      /// @brief Helper function for integral that does the actual integration
+      /// @param[in] func_of_w_and_cos Optional function that will multiply
+      /// the differential cross section at each grid point when computing
+      /// the integral. The two arguments are the energy transfer (MeV) and the
+      /// scattering cosine, respectively.
       double compute_integral( int pdg_a, double KEa, const MultipoleLabel& ml,
-        double& diff_max ) const;
+        double& diff_max, std::function< double(double,double) >*
+        func_of_w_and_cos = nullptr ) const;
+
+    protected:
 
       struct OptimizationMapKey {
         OptimizationMapKey( int pdg_a, MultipoleLabel ml )

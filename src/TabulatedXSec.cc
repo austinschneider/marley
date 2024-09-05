@@ -197,7 +197,8 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
 }
 
 double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
-  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max ) const
+  const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max,
+  std::function< double(double,double) >* func_of_w_and_cos ) const
 {
   // Set the maximum differential cross section to zero to start
   diff_max = 0.;
@@ -260,6 +261,12 @@ double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
 
       // Compute the differential cross section at this 2D grid point
       double diff = this->diff_xsec( pdg_a, KEa, w, cos_theta, ml );
+
+      // If the user supplied a function to use to multiply the 2D differential
+      // cross section, then apply it before continuing
+      if ( func_of_w_and_cos ) {
+        diff *= func_of_w_and_cos->operator()( w, cos_theta );
+      }
 
       // If it is larger than any value encountered so far, record it as
       // the new maximum
