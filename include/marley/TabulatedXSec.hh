@@ -49,8 +49,10 @@ namespace marley {
       /// @brief Returns true if this cross section represents a CC process
       /// or false otherwise
       inline bool is_cc() const  {
-        bool is_cc = ( proc_type_ == ProcType::NeutrinoCC_Discrete || proc_type_ == ProcType::AntiNeutrinoCC_Discrete
-         || proc_type_ == ProcType::NeutrinoCC_Continuum || proc_type_ == ProcType::AntiNeutrinoCC_Continuum );
+        bool is_cc = ( proc_type_ == ProcType::NeutrinoCC_Discrete
+         || proc_type_ == ProcType::AntiNeutrinoCC_Discrete
+         || proc_type_ == ProcType::NeutrinoCC_Continuum
+         || proc_type_ == ProcType::AntiNeutrinoCC_Continuum );
         return is_cc;
       }
 
@@ -93,14 +95,30 @@ namespace marley {
 
       inline void unoptimize() { optimization_map_.clear(); }
 
+      /// @brief Storage for terms in the integrals evaluated by
+      /// compute_integral().
+      /// @details Associates each term in the sum with the corresponding
+      /// leptonic scattering cosine and energy transfer (MeV)
+      struct IntegralTerm {
+        IntegralTerm( double w, double ctl, double val ) : omega_( w ),
+          cos_theta_( ctl ), value_( val ) {}
+
+        double omega_; /// Energy transfer (MeV)
+        double cos_theta_; /// Scattering cosine
+        /// Term in the sum that gives this phase-space point's contribution
+        /// to the total cross section
+        double value_;
+      };
+
       /// @brief Helper function for integral that does the actual integration
-      /// @param[in] func_of_w_and_cos Optional function that will multiply
-      /// the differential cross section at each grid point when computing
-      /// the integral. The two arguments are the energy transfer (MeV) and the
-      /// scattering cosine, respectively.
+      /// @param[out] integral_terms Optional vector that will be cleared and
+      /// filled with each term in the sum that leads to the value of the
+      /// integral returned by the function. The terms are associated with
+      /// energy transfer (omega, MeV) and scattering cosine (cos_theta,
+      /// dimensionless) values in the IntegralTerm struct.
       double compute_integral( int pdg_a, double KEa, const MultipoleLabel& ml,
-        double& diff_max, std::function< double(double,double) >*
-        func_of_w_and_cos = nullptr ) const;
+        double& diff_max,
+        std::vector< IntegralTerm >* integral_terms = nullptr ) const;
 
     protected:
 

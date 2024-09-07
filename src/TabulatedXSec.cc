@@ -198,10 +198,14 @@ double marley::TabulatedXSec::diff_xsec( int pdg_a, double KEa, double omega,
 
 double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
   const marley::TabulatedXSec::MultipoleLabel& ml, double& diff_max,
-  std::function< double(double,double) >* func_of_w_and_cos ) const
+  std::vector< IntegralTerm >* integral_terms ) const
 {
   // Set the maximum differential cross section to zero to start
   diff_max = 0.;
+
+  // If the input vector is not null, then clear it in preparation for
+  // accumulating the terms of the integral
+  if ( integral_terms ) integral_terms->clear();
 
   // Get the table of nuclear responses for the requested multipole
   const auto& rt = this->responses_.at( ml );
@@ -262,12 +266,6 @@ double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
       // Compute the differential cross section at this 2D grid point
       double diff = this->diff_xsec( pdg_a, KEa, w, cos_theta, ml );
 
-      // If the user supplied a function to use to multiply the 2D differential
-      // cross section, then apply it before continuing
-      if ( func_of_w_and_cos ) {
-        diff *= func_of_w_and_cos->operator()( w, cos_theta );
-      }
-
       // If it is larger than any value encountered so far, record it as
       // the new maximum
       if ( diff > diff_max ) diff_max = diff;
@@ -280,7 +278,17 @@ double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
       // rule
       if ( iq == 0u || iq == num_q_minus_one ) diff /= 2.;
       w_integ += diff;
-    }
+
+      // If the user supplied a vector to record the terms in the integral,
+      // then store the contribution from the current iteration before
+      // continuing to the next grid point
+      if ( integral_terms ) {
+        double value = diff * dq * dw;
+        if ( iw == 0u || iw == num_w_minus_one ) value /= 2.;
+        integral_terms->emplace_back( w, cos_theta, value );
+      }
+
+    } // q grid points
 
     // We're done summing over q values. Scale the result to get the
     // integral over q for this w grid point.
@@ -290,7 +298,8 @@ double marley::TabulatedXSec::compute_integral( int pdg_a, double KEa,
     if ( iw == 0u || iw == num_w_minus_one ) w_integ /= 2.;
 
     integ += w_integ;
-  }
+
+  } // w grid points
 
   // We're done. Scale the integral over w by the needed prefactor
   integ *= dw;
