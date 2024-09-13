@@ -353,29 +353,29 @@ clean:
 	$(RM) -rf ../docs/_build/*
 
 install: marley
-	mkdir -p $(DESTDIR)$(bindir)
-	mkdir -p $(DESTDIR)$(libdir)
-	mkdir -p $(DESTDIR)$(incdir)/marley
-	mkdir -p $(DESTDIR)$(datadir)/marley
-	cp marley $(MAYBE_MARSUM) $(DESTDIR)$(bindir)
-	cp $(SHARED_LIB) $(DESTDIR)$(libdir)
-	cp $(ROOT_SHARED_LIB) $(DESTDIR)$(libdir) 2> /dev/null || true
-	cp marley_root_dict_rdict.pcm $(DESTDIR)$(libdir) 2> /dev/null || true
-	cp -r ../data/mass_table.js $(DESTDIR)$(datadir)/marley
-	cp -r ../data/gs_spin_parity_table.txt $(DESTDIR)$(datadir)/marley
-	cp -r ../data/react $(DESTDIR)$(datadir)/marley
-	cp -r ../data/structure $(DESTDIR)$(datadir)/marley
-	cp -r ../examples $(DESTDIR)$(datadir)/marley
-	cp -r ../include/marley $(DESTDIR)$(incdir)
+	mkdir -p $(INSTALL)$(bindir)
+	mkdir -p $(INSTALL)$(libdir)
+	mkdir -p $(INSTALL)$(incdir)/marley
+	mkdir -p $(INSTALL)$(datadir)/marley
+	cp marley $(MAYBE_MARSUM) $(INSTALL)$(bindir)
+	cp $(SHARED_LIB) $(INSTALL)$(libdir)
+	cp $(ROOT_SHARED_LIB) $(INSTALL)$(libdir) 2> /dev/null || true
+	cp marley_root_dict_rdict.pcm $(INSTALL)$(libdir) 2> /dev/null || true
+	cp -r ../data/mass_table.js $(INSTALL)$(datadir)/marley
+	cp -r ../data/gs_spin_parity_table.txt $(INSTALL)$(datadir)/marley
+	cp -r ../data/react $(INSTALL)$(datadir)/marley
+	cp -r ../data/structure $(INSTALL)$(datadir)/marley
+	cp -r ../examples $(INSTALL)$(datadir)/marley
+	cp -r ../include/marley $(INSTALL)$(incdir)
 	ldconfig
 
 uninstall:
-	$(RM) $(DESTDIR)$(bindir)/marley
-	$(RM) $(DESTDIR)$(bindir)/marsum
-	$(RM) $(DESTDIR)$(bindir)/mroot
-	$(RM) $(DESTDIR)$(libdir)/$(SHARED_LIB)
-	$(RM) $(DESTDIR)$(libdir)/$(ROOT_SHARED_LIB)
-	$(RM) $(DESTDIR)$(libdir)/marley_root_dict_rdict.pcm
-	$(RM) -r $(DESTDIR)$(datadir)/marley
-	$(RM) -r $(DESTDIR)$(incdir)/marley
+	$(RM) $(INSTALL)$(bindir)/marley
+	$(RM) $(INSTALL)$(bindir)/marsum
+	$(RM) $(INSTALL)$(bindir)/mroot
+	$(RM) $(INSTALL)$(libdir)/$(SHARED_LIB)
+	$(RM) $(INSTALL)$(libdir)/$(ROOT_SHARED_LIB)
+	$(RM) $(INSTALL)$(libdir)/marley_root_dict_rdict.pcm
+	$(RM) -r $(INSTALL)$(datadir)/marley
+	$(RM) -r $(INSTALL)$(incdir)/marley
 	ldconfig
