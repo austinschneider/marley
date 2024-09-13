@@ -254,7 +254,7 @@ endif
 
 # Set up default variables for the install/uninstall targets and for setting
 # the executable rpath
-prefix = /usr
+prefix =
 exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
 datadir = $(prefix)/share
@@ -361,8 +361,10 @@ install: marley
 	cp $(SHARED_LIB) $(DESTDIR)$(libdir)
 	cp $(ROOT_SHARED_LIB) $(DESTDIR)$(libdir) 2> /dev/null || true
 	cp marley_root_dict_rdict.pcm $(DESTDIR)$(libdir) 2> /dev/null || true
-	cp -r ../react $(DESTDIR)$(datadir)/marley
-	cp -r ../structure $(DESTDIR)$(datadir)/marley
+	cp -r ../data/mass_table.js $(DESTDIR)$(datadir)/marley
+	cp -r ../data/gs_spin_parity_table.txt $(DESTDIR)$(datadir)/marley
+	cp -r ../data/react $(DESTDIR)$(datadir)/marley
+	cp -r ../data/structure $(DESTDIR)$(datadir)/marley
 	cp -r ../examples $(DESTDIR)$(datadir)/marley
 	cp -r ../include/marley $(DESTDIR)$(incdir)
 	ldconfig
