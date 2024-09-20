@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(MARLEY)
+project(marley)
 
 # Include GNUInstallDirs to get standard install directories like CMAKE_INSTALL_BINDIR
 include(GNUInstallDirs)
@@ -257,11 +257,11 @@ endif()
 
 # Install rules
 install(TARGETS marley
-    EXPORT MARLEYConfig
+    EXPORT marleyConfig
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install(TARGETS MARLEY
-    EXPORT MARLEYConfig
+    EXPORT marleyConfig
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/marley
@@ -313,20 +313,20 @@ include(CMakePackageConfigHelpers)
 #)
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/MARLEYConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/marleyConfigVersion.cmake"
     VERSION ${MARLEY_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
-export(EXPORT MARLEYConfig
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/MARLEYConfig.cmake"
+export(EXPORT marleyConfig
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/marleyConfig.cmake"
 )
 
 install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/MARLEYConfigVersion.cmake"
-    DESTINATION share/MARLEY/cmake
+    "${CMAKE_CURRENT_BINARY_DIR}/marleyConfigVersion.cmake"
+    DESTINATION share/marley/cmake
 )
 
-install(EXPORT MARLEYConfig
-    DESTINATION share/MARLEY/cmake
+install(EXPORT marleyConfig
+    DESTINATION share/marley/cmake
 )
 
