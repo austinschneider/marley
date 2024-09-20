@@ -15,6 +15,8 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
+#ifndef MARLEY_Parity_HH
+#define MARLEY_Parity_HH
 
 // Standard library includes
 #include <ostream>
@@ -119,3 +121,6 @@ inline std::ostream& operator<<(std::ostream& out, const marley::Parity& p)
 }
 
 std::istream& operator>> (std::istream& in, marley::Parity& p);
+
+#endif // MARLEY_Parity_HH
+

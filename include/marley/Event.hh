@@ -15,6 +15,8 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
+#ifndef MARLEY_Event_HH
+#define MARLEY_Event_HH
 
 // Standard library includes
 #include <string>
@@ -315,3 +317,6 @@ inline std::istream& operator>>(std::istream& in, marley::Event& e) {
   e.read(in);
   return in;
 }
+
+#endif // MARLEY_Event_HH
+
