@@ -10,16 +10,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Read the MARLEY version from the .VERSION file if it exists
-if(EXISTS "${CMAKE_SOURCE_DIR}/.VERSION")
-    file(READ "${CMAKE_SOURCE_DIR}/.VERSION" MARLEY_VERSION)
+if(EXISTS "${PROJECT_SOURCE_DIR}/.VERSION")
+    file(READ "${PROJECT_SOURCE_DIR}/.VERSION" MARLEY_VERSION)
     string(STRIP "${MARLEY_VERSION}" MARLEY_VERSION)
 else()
     # Attempt to get the GIT revision
     find_package(Git QUIET)
-    if(GIT_FOUND AND EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
         execute_process(
             COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             OUTPUT_VARIABLE GIT_COMMIT_HASH
             OUTPUT_STRIP_TRAILING_WHITESPACE
             ERROR_QUIET
@@ -28,7 +28,7 @@ else()
             # Check if the working tree is dirty
             execute_process(
                 COMMAND ${GIT_EXECUTABLE} diff --quiet
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+                WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                 RESULT_VARIABLE GIT_DIFF_EXIT_CODE
             )
             if(NOT GIT_DIFF_EXIT_CODE EQUAL 0)
@@ -145,20 +145,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     endif()
 endif()
 
-# Include directories
-include_directories(${CMAKE_SOURCE_DIR}/include)
-
 # Source files
-file(GLOB MARLEY_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cc")
+file(GLOB MARLEY_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cc")
 list(REMOVE_ITEM MARLEY_SOURCES
-    "${CMAKE_SOURCE_DIR}/src/marley.cc"
-    "${CMAKE_SOURCE_DIR}/src/marley_root.cc"
-    "${CMAKE_SOURCE_DIR}/src/marsum.cc"
-    "${CMAKE_SOURCE_DIR}/src/RootJSONConfig.cc"
-    "${CMAKE_SOURCE_DIR}/src/RootOutputFile.cc"
-    "${CMAKE_SOURCE_DIR}/src/RootEventFileReader.cc"
-    "${CMAKE_SOURCE_DIR}/src/MacroEventFileReader.cc"
-    "${CMAKE_SOURCE_DIR}/src/OutputFile.cc"
+    "${PROJECT_SOURCE_DIR}/src/marley.cc"
+    "${PROJECT_SOURCE_DIR}/src/marley_root.cc"
+    "${PROJECT_SOURCE_DIR}/src/marsum.cc"
+    "${PROJECT_SOURCE_DIR}/src/RootJSONConfig.cc"
+    "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
+    "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
+    "${PROJECT_SOURCE_DIR}/src/MacroEventFileReader.cc"
+    "${PROJECT_SOURCE_DIR}/src/OutputFile.cc"
 )
 
 # Build the MARLEY shared library
@@ -166,26 +163,30 @@ add_library(MARLEY SHARED ${MARLEY_SOURCES})
 target_compile_options(MARLEY PRIVATE ${GSL_CFLAGS})
 target_link_libraries(MARLEY PRIVATE ${GSL_LIBS})
 set_target_properties(MARLEY PROPERTIES VERSION ${MARLEY_VERSION})
+target_include_directories(MARLEY PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
+)
 
 # Build MARLEY_ROOT shared library if ROOT is found
 if(USE_ROOT)
     set(ROOT_SOURCES
-        "${CMAKE_SOURCE_DIR}/src/marley_root.cc"
-        "${CMAKE_SOURCE_DIR}/src/RootJSONConfig.cc"
-        "${CMAKE_SOURCE_DIR}/src/OutputFile.cc"
-        "${CMAKE_SOURCE_DIR}/src/RootOutputFile.cc"
-        "${CMAKE_SOURCE_DIR}/src/RootEventFileReader.cc"
-        "${CMAKE_SOURCE_DIR}/src/MacroEventFileReader.cc"
+        "${PROJECT_SOURCE_DIR}/src/marley_root.cc"
+        "${PROJECT_SOURCE_DIR}/src/RootJSONConfig.cc"
+        "${PROJECT_SOURCE_DIR}/src/OutputFile.cc"
+        "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
+        "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
+        "${PROJECT_SOURCE_DIR}/src/MacroEventFileReader.cc"
     )
 
     # Generate ROOT dictionary
     set(DICTIONARY_HEADERS
-        "${CMAKE_SOURCE_DIR}/include/marley/Particle.hh"
-        "${CMAKE_SOURCE_DIR}/include/marley/Event.hh"
-        "${CMAKE_SOURCE_DIR}/include/marley/MacroEventFileReader.hh"
-        "${CMAKE_SOURCE_DIR}/include/marley/Parity.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/Particle.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/Event.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/MacroEventFileReader.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/Parity.hh"
     )
-    ROOT_GENERATE_DICTIONARY(G__MARLEY_ROOT ${DICTIONARY_HEADERS} LINKDEF "${CMAKE_SOURCE_DIR}/include/marley/marley_linkdef.hh")
+    ROOT_GENERATE_DICTIONARY(G__MARLEY_ROOT ${DICTIONARY_HEADERS} LINKDEF "${PROJECT_SOURCE_DIR}/include/marley/marley_linkdef.hh")
     list(APPEND ROOT_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/G__MARLEY_ROOT.cxx")
 
     add_library(MARLEY_ROOT SHARED ${ROOT_SOURCES})
@@ -193,6 +194,10 @@ if(USE_ROOT)
     target_compile_options(MARLEY_ROOT PRIVATE ${GSL_CFLAGS})
     target_link_libraries(MARLEY_ROOT PUBLIC MARLEY ${ROOT_LIBRARIES} ${GSL_LIBS})
     set_target_properties(MARLEY_ROOT PROPERTIES VERSION ${MARLEY_VERSION})
+    #target_include_directories(MARLEY_ROOT PUBLIC
+    #    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    #    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
+    #)
 
     # Set the C++ standard for MARLEY_ROOT
     set_target_properties(MARLEY_ROOT PROPERTIES CXX_STANDARD ${ROOT_CXX_STANDARD})
@@ -200,10 +205,14 @@ if(USE_ROOT)
 endif()
 
 # Build the 'marley' executable
-add_executable(marley "${CMAKE_SOURCE_DIR}/src/marley.cc")
+add_executable(marley "${PROJECT_SOURCE_DIR}/src/marley.cc")
 target_include_directories(marley PRIVATE ${GSL_CFLAGS})
 target_compile_options(marley PRIVATE ${GSL_CFLAGS})
 target_link_libraries(marley PRIVATE MARLEY ${GSL_LIBS})
+target_include_directories(marley PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
+)
 
 if(USE_ROOT)
     target_link_libraries(marley PRIVATE MARLEY_ROOT ${ROOT_LIBRARIES})
@@ -214,10 +223,14 @@ endif()
 
 # Build 'marsum' executable if ROOT is found
 if(USE_ROOT)
-    add_executable(marsum "${CMAKE_SOURCE_DIR}/src/marsum.cc")
+    add_executable(marsum "${PROJECT_SOURCE_DIR}/src/marsum.cc")
     target_include_directories(marsum PRIVATE ${GSL_CFLAGS})
     target_compile_options(marsum PRIVATE ${GSL_CFLAGS})
     target_link_libraries(marsum PRIVATE MARLEY MARLEY_ROOT ${ROOT_LIBRARIES} ${GSL_LIBS})
+    target_include_directories(marsum PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
+    )
     # Set the C++ standard for 'marsum'
     set_target_properties(marsum PROPERTIES CXX_STANDARD ${ROOT_CXX_STANDARD})
     set_target_properties(marsum PROPERTIES CXX_STANDARD_REQUIRED YES)
@@ -225,11 +238,15 @@ endif()
 
 # Build test executable
 add_executable(martest)
-file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/tests/*.cc")
+file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/tests/*.cc")
 target_sources(martest PRIVATE ${TEST_SOURCES})
 target_include_directories(martest PRIVATE ${GSL_CFLAGS})
 target_compile_options(martest PRIVATE ${GSL_CFLAGS})
 target_link_libraries(martest PRIVATE MARLEY ${GSL_LIBS})
+target_include_directories(martest PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
+)
 
 if(USE_ROOT)
     target_link_libraries(martest PRIVATE MARLEY_ROOT ${ROOT_LIBRARIES})
@@ -239,9 +256,17 @@ if(USE_ROOT)
 endif()
 
 # Install rules
-install(TARGETS marley DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(TARGETS MARLEY LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/marley DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS marley
+    EXPORT MARLEYConfig
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(TARGETS MARLEY
+    EXPORT MARLEYConfig
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/marley
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 if(USE_ROOT)
     install(TARGETS marsum DESTINATION ${CMAKE_INSTALL_BINDIR})
@@ -249,24 +274,24 @@ if(USE_ROOT)
 endif()
 
 # Install data files
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/data/ DESTINATION ${CMAKE_INSTALL_DATADIR}/marley)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/data/ DESTINATION ${CMAKE_INSTALL_DATADIR}/marley)
 
 # Install examples
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/examples DESTINATION ${CMAKE_INSTALL_DATADIR}/marley)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/examples DESTINATION ${CMAKE_INSTALL_DATADIR}/marley)
 
 # Install mroot script if ROOT is found
 if(USE_ROOT)
-    install(PROGRAMS ${CMAKE_SOURCE_DIR}/src/scripts/mroot DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install(PROGRAMS ${PROJECT_SOURCE_DIR}/src/scripts/mroot DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 # Configure and install marley-config script
-configure_file(${CMAKE_SOURCE_DIR}/src/scripts/marley-config.in ${CMAKE_CURRENT_BINARY_DIR}/marley-config @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/src/scripts/marley-config.in ${CMAKE_CURRENT_BINARY_DIR}/marley-config @ONLY)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/marley-config DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 ## Optional: Add custom target for documentation if needed
 #add_custom_target(docs
 #    COMMAND ${CMAKE_COMMAND} -E echo "Building documentation..."
-#    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/docs
+#    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/docs
 #)
 
 # Set RPATH for installed binaries
@@ -276,4 +301,32 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}")
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
+
+# CMake configuration for MARLEY package
+include(CMakePackageConfigHelpers)
+
+# Install the CMake package config files
+#install(EXPORT MARLEYTargets
+#    FILE MARLEYTargets.cmake
+#    NAMESPACE MARLEY::
+#    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/MARLEY
+#)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/MARLEYConfigVersion.cmake"
+    VERSION ${MARLEY_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+export(EXPORT MARLEYConfig
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/MARLEYConfig.cmake"
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/MARLEYConfigVersion.cmake"
+    DESTINATION share/MARLEY/cmake
+)
+
+install(EXPORT MARLEYConfig
+    DESTINATION share/MARLEY/cmake
+)
 
