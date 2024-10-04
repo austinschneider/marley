@@ -158,14 +158,8 @@ list(REMOVE_ITEM MARLEY_SOURCES
     "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
     "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
     "${PROJECT_SOURCE_DIR}/src/MacroEventFileReader.cc"
+    "${PROJECT_SOURCE_DIR}/src/OutputFile.cc"
 )
-if(USE_ROOT)
-    set(ROOT_SOURCES_MARLEY
-        "${PROJECT_SOURCE_DIR}/src/RootJSONConfig.cc"
-    )
-else()
-    set(ROOT_SOURCES_MARLEY "")
-endif()
 
 # Print the list of source files
 message(STATUS "MARLEY_SOURCES contains the following files:")
@@ -195,6 +189,7 @@ message(STATUS "MARLEY target link libraries: ${MARLEY_LINK_LIBRARIES}")
 # Build MARLEY_ROOT shared library if ROOT is found
 if(USE_ROOT)
     set(ROOT_SOURCES
+        "${PROJECT_SOURCE_DIR}/src/OutputFile.cc"
         "${PROJECT_SOURCE_DIR}/src/marley_root.cc"
         "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
         "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
@@ -223,7 +218,11 @@ if(USE_ROOT)
 endif()
 
 # Build the 'marley' executable
-add_executable(marley_exec "${PROJECT_SOURCE_DIR}/src/marley.cc")
+if(USE_ROOT)
+    add_executable(marley_exec "${PROJECT_SOURCE_DIR}/src/marley.cc")
+else()
+    add_executable(marley_exec "${PROJECT_SOURCE_DIR}/src/marley.cc" "${PROJECT_SOURCE_DIR}/src/OutputFile.cc")
+endif()
 set_target_properties(marley_exec PROPERTIES OUTPUT_NAME "marley")
 target_include_directories(marley_exec PRIVATE ${GSL_CFLAGS})
 target_compile_options(marley_exec PRIVATE ${GSL_CFLAGS})
