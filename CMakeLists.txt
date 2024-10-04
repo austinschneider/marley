@@ -233,7 +233,7 @@ if(USE_ROOT)
     target_link_libraries(marley_exec PRIVATE MARLEY_ROOT ${ROOT_LIBRARIES})
     # Set the C++ standard for 'marley'
     set_target_properties(marley_exec PROPERTIES CXX_STANDARD ${ROOT_CXX_STANDARD})
-    set_target_properties(marley PROPERTIES CXX_STANDARD_REQUIRED YES)
+    set_target_properties(marley_exec PROPERTIES CXX_STANDARD_REQUIRED YES)
 endif()
 
 # Build 'marsum' executable if ROOT is found
