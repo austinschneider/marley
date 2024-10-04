@@ -191,6 +191,7 @@ if(USE_ROOT)
     set(ROOT_SOURCES
         "${PROJECT_SOURCE_DIR}/src/OutputFile.cc"
         "${PROJECT_SOURCE_DIR}/src/marley_root.cc"
+        "${PROJECT_SOURCE_DIR}/src/RootJSONConfig.cc"
         "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
         "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
         "${PROJECT_SOURCE_DIR}/src/MacroEventFileReader.cc"
