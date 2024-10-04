@@ -30,6 +30,8 @@ namespace marley {
 
     public:
 
+      virtual ~JSONConfig() = default;
+
       using InterpMethod = marley::InterpolationGrid<double>
         ::InterpolationMethod;
 
