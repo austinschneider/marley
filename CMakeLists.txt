@@ -154,7 +154,6 @@ list(REMOVE_ITEM MARLEY_SOURCES
     "${PROJECT_SOURCE_DIR}/src/marley.cc"
     "${PROJECT_SOURCE_DIR}/src/marley_root.cc"
     "${PROJECT_SOURCE_DIR}/src/marsum.cc"
-    "${PROJECT_SOURCE_DIR}/src/EventFileReader.cc"
     "${PROJECT_SOURCE_DIR}/src/RootJSONConfig.cc"
     "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
     "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
@@ -197,7 +196,6 @@ message(STATUS "MARLEY target link libraries: ${MARLEY_LINK_LIBRARIES}")
 if(USE_ROOT)
     set(ROOT_SOURCES
         "${PROJECT_SOURCE_DIR}/src/marley_root.cc"
-        "${PROJECT_SOURCE_DIR}/src/EventFileReader.cc"
         "${PROJECT_SOURCE_DIR}/src/OutputFile.cc"
         "${PROJECT_SOURCE_DIR}/src/RootOutputFile.cc"
         "${PROJECT_SOURCE_DIR}/src/RootEventFileReader.cc"
