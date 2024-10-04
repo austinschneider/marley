@@ -168,23 +168,23 @@ endforeach()
 
 # Build the MARLEY shared library
 message(STATUS "Adding MARLEY library target.")
-add_library(marley_lib SHARED ${MARLEY_SOURCES})
-set_target_properties(marley_lib PROPERTIES OUTPUT_NAME "MARLEY")
-target_compile_options(marley_lib PRIVATE ${GSL_CFLAGS})
-target_link_libraries(marley_lib PRIVATE ${GSL_LIBS})
-set_target_properties(marley_lib PROPERTIES VERSION ${MARLEY_VERSION})
-target_include_directories(marley_lib PUBLIC
+add_library(MARLEY SHARED ${MARLEY_SOURCES})
+set_target_properties(MARLEY PROPERTIES OUTPUT_NAME "MARLEY")
+target_compile_options(MARLEY PRIVATE ${GSL_CFLAGS})
+target_link_libraries(MARLEY PRIVATE ${GSL_LIBS})
+set_target_properties(MARLEY PROPERTIES VERSION ${MARLEY_VERSION})
+target_include_directories(MARLEY PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
 )
 
 # Print properties of the MARLEY target
-get_target_property(MARLEY_INCLUDE_DIRS marley_lib INCLUDE_DIRECTORIES)
-get_target_property(MARLEY_COMPILE_OPTIONS marley_lib COMPILE_OPTIONS)
-get_target_property(MARLEY_LINK_LIBRARIES marley_lib LINK_LIBRARIES)
-message(STATUS "marley_lib target include directories: ${MARLEY_INCLUDE_DIRS}")
-message(STATUS "marley_lib target compile options: ${MARLEY_COMPILE_OPTIONS}")
-message(STATUS "marley_lib target link libraries: ${MARLEY_LINK_LIBRARIES}")
+get_target_property(MARLEY_INCLUDE_DIRS MARLEY INCLUDE_DIRECTORIES)
+get_target_property(MARLEY_COMPILE_OPTIONS MARLEY COMPILE_OPTIONS)
+get_target_property(MARLEY_LINK_LIBRARIES MARLEY LINK_LIBRARIES)
+message(STATUS "MARLEY target include directories: ${MARLEY_INCLUDE_DIRS}")
+message(STATUS "MARLEY target compile options: ${MARLEY_COMPILE_OPTIONS}")
+message(STATUS "MARLEY target link libraries: ${MARLEY_LINK_LIBRARIES}")
 
 # Build MARLEY_ROOT shared library if ROOT is found
 if(USE_ROOT)
@@ -210,7 +210,7 @@ if(USE_ROOT)
     add_library(MARLEY_ROOT SHARED ${ROOT_SOURCES})
     target_include_directories(MARLEY_ROOT PRIVATE ${GSL_CFLAGS})
     target_compile_options(MARLEY_ROOT PRIVATE ${GSL_CFLAGS})
-    target_link_libraries(MARLEY_ROOT PUBLIC marley_lib ${ROOT_LIBRARIES} ${GSL_LIBS})
+    target_link_libraries(MARLEY_ROOT PUBLIC MARLEY ${ROOT_LIBRARIES} ${GSL_LIBS})
     set_target_properties(MARLEY_ROOT PROPERTIES VERSION ${MARLEY_VERSION})
 
     # Set the C++ standard for MARLEY_ROOT
@@ -223,7 +223,7 @@ add_executable(marley_exec "${PROJECT_SOURCE_DIR}/src/marley.cc")
 set_target_properties(marley_exec PROPERTIES OUTPUT_NAME "marley")
 target_include_directories(marley_exec PRIVATE ${GSL_CFLAGS})
 target_compile_options(marley_exec PRIVATE ${GSL_CFLAGS})
-target_link_libraries(marley_exec PRIVATE marley_lib ${GSL_LIBS})
+target_link_libraries(marley_exec PRIVATE MARLEY ${GSL_LIBS})
 target_include_directories(marley_exec PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
@@ -241,7 +241,7 @@ if(USE_ROOT)
     add_executable(marsum "${PROJECT_SOURCE_DIR}/src/marsum.cc")
     target_include_directories(marsum PRIVATE ${GSL_CFLAGS})
     target_compile_options(marsum PRIVATE ${GSL_CFLAGS})
-    target_link_libraries(marsum PRIVATE marley_lib MARLEY_ROOT ${ROOT_LIBRARIES} ${GSL_LIBS})
+    target_link_libraries(marsum PRIVATE MARLEY MARLEY_ROOT ${ROOT_LIBRARIES} ${GSL_LIBS})
     target_include_directories(marsum PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
@@ -257,7 +257,7 @@ file(GLOB TEST_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/tests/*.cc")
 target_sources(martest PRIVATE ${TEST_SOURCES})
 target_include_directories(martest PRIVATE ${GSL_CFLAGS})
 target_compile_options(martest PRIVATE ${GSL_CFLAGS})
-target_link_libraries(martest PRIVATE marley_lib ${GSL_LIBS})
+target_link_libraries(martest PRIVATE MARLEY ${GSL_LIBS})
 target_include_directories(martest PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/marley>
@@ -275,7 +275,7 @@ install(TARGETS marley_exec
     EXPORT marleyConfig
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install(TARGETS marley_lib
+install(TARGETS MARLEY
     EXPORT marleyConfig
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
