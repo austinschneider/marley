@@ -169,7 +169,6 @@ endforeach()
 # Build the MARLEY shared library
 message(STATUS "Adding MARLEY library target.")
 add_library(MARLEY SHARED ${MARLEY_SOURCES})
-set_target_properties(MARLEY PROPERTIES OUTPUT_NAME "MARLEY")
 target_compile_options(MARLEY PRIVATE ${GSL_CFLAGS})
 target_link_libraries(MARLEY PRIVATE ${GSL_LIBS})
 set_target_properties(MARLEY PROPERTIES VERSION ${MARLEY_VERSION})
