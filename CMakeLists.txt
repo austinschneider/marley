@@ -197,16 +197,6 @@ if(USE_ROOT)
         "${PROJECT_SOURCE_DIR}/src/MacroEventFileReader.cc"
     )
 
-    # Generate ROOT dictionary
-    set(DICTIONARY_HEADERS
-        "${PROJECT_SOURCE_DIR}/include/marley/Particle.hh"
-        "${PROJECT_SOURCE_DIR}/include/marley/Event.hh"
-        "${PROJECT_SOURCE_DIR}/include/marley/MacroEventFileReader.hh"
-        "${PROJECT_SOURCE_DIR}/include/marley/Parity.hh"
-    )
-    ROOT_GENERATE_DICTIONARY(G__MARLEY_ROOT ${DICTIONARY_HEADERS} LINKDEF "${PROJECT_SOURCE_DIR}/include/marley/marley_linkdef.hh")
-    list(APPEND ROOT_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/G__MARLEY_ROOT.cxx")
-
     add_library(MARLEY_ROOT SHARED ${ROOT_SOURCES})
     target_include_directories(MARLEY_ROOT PRIVATE ${GSL_CFLAGS})
     target_compile_options(MARLEY_ROOT PRIVATE ${GSL_CFLAGS})
@@ -216,6 +206,20 @@ if(USE_ROOT)
     # Set the C++ standard for MARLEY_ROOT
     set_target_properties(MARLEY_ROOT PROPERTIES CXX_STANDARD ${ROOT_CXX_STANDARD})
     set_target_properties(MARLEY_ROOT PROPERTIES CXX_STANDARD_REQUIRED YES)
+
+    # Generate ROOT dictionary
+    set(DICTIONARY_HEADERS
+        "${PROJECT_SOURCE_DIR}/include/marley/Parity.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/Particle.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/Event.hh"
+        "${PROJECT_SOURCE_DIR}/include/marley/MacroEventFileReader.hh"
+    )
+    ROOT_GENERATE_DICTIONARY(
+        G__MARLEY_ROOT ${DICTIONARY_HEADERS}
+        LINKDEF "${PROJECT_SOURCE_DIR}/include/marley/marley_linkdef.hh"
+        MODULE MARLEY_ROOT
+    )
+
 endif()
 
 # Build the 'marley' executable
