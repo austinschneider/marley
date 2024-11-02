@@ -15,8 +15,6 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
-#ifndef MARLEY_MacroEventFileReader_HH
-#define MARLEY_MacroEventFileReader_HH
 
 // Standard library includes
 #include <string>
@@ -52,6 +50,4 @@ namespace marley {
   };
 
 }
-
-#endif // MARLEY_MacroEventFileReader_HH
 

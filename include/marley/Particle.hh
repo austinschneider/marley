@@ -15,10 +15,7 @@
 // or visit https://www.montecarlonet.org/GUIDELINES for details.
 
 #pragma once
-#ifndef MARLEY_Particle_HH
-#define MARLEY_Particle_HH
 #include <fstream>
-
 
 namespace marley {
 
@@ -210,6 +207,4 @@ inline std::istream& operator>>(std::istream& in, marley::Particle& p)
   p.read(in);
   return in;
 }
-
-#endif // MARLEY_Particle_HH
 
