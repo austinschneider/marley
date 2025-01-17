@@ -214,12 +214,14 @@ if(USE_ROOT)
         "${PROJECT_SOURCE_DIR}/include/marley/Event.hh"
         "${PROJECT_SOURCE_DIR}/include/marley/MacroEventFileReader.hh"
     )
+    set(TEMP_CXX_STANDARD ${CXX_STANDARD})
+    set(CXX_STANDARD ${ROOT_CXX_STANDARD})
     ROOT_GENERATE_DICTIONARY(
         G__MARLEY_ROOT ${DICTIONARY_HEADERS}
         LINKDEF "${PROJECT_SOURCE_DIR}/include/marley/marley_linkdef.hh"
         MODULE MARLEY_ROOT
     )
-
+    set(CXX_STANDARD ${TEMP_CXX_STANDARD})
 endif()
 
 # Build the 'marley' executable
